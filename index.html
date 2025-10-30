@@ -137,19 +137,50 @@
 
         // Renkleri fluid'e uygula ve efekti tetikle
         // Renkleri fluid'e uygula ve efekti tetikle - GELİŞMİŞ SİSTEM
+        let currentColorOps = null;
+        
         function triggerFluidWithColors(colors, x, y) {
             if (!colors || colors.length === 0) {
                 colors = [{ r: 255, g: 100, b: 200 }];
             }
             
             console.log('🎨 Fluid tetikleniyor:', colors.length, 'renk');
+            console.log('🌈 İlk 3 renk:', colors.slice(0, 3).map(c => 
+                `rgb(${c.r},${c.g},${c.b})`
+            ).join(' | '));
+            
+            // 🔥 CABLES OPS'LARINI DEĞİŞTİR
+            if (CABLES && CABLES.patch && CABLES.patch.ops) {
+                // Renk operatörünü bul ve değiştir
+                CABLES.patch.ops.forEach(op => {
+                    if (op.portsIn) {
+                        op.portsIn.forEach(port => {
+                            // R, G, B portlarını bul
+                            if (port.name === 'r' || port.name === 'R' || port.name === 'red') {
+                                const color = colors[0];
+                                port.set(color.r / 255);
+                                console.log('🔴 R değişti:', color.r);
+                            }
+                            if (port.name === 'g' || port.name === 'G' || port.name === 'green') {
+                                const color = colors[0];
+                                port.set(color.g / 255);
+                                console.log('🟢 G değişti:', color.g);
+                            }
+                            if (port.name === 'b' || port.name === 'B' || port.name === 'blue') {
+                                const color = colors[0];
+                                port.set(color.b / 255);
+                                console.log('🔵 B değişti:', color.b);
+                            }
+                        });
+                    }
+                });
+            }
             
             // HER RENKTEN BİR EFEKT OLUŞTUR (max 5 renk)
             const colorsToUse = colors.slice(0, 5);
             
             colorsToUse.forEach((color, index) => {
                 setTimeout(() => {
-                    // Her renk için farklı açıda başla
                     const startAngle = (index / colorsToUse.length) * Math.PI * 2;
                     const offsetX = Math.cos(startAngle) * 50;
                     const offsetY = Math.sin(startAngle) * 50;
@@ -157,7 +188,7 @@
                     const startY = y + offsetY;
                     
                     createColorfulSpiral(startX, startY, color, index);
-                }, index * 50); // Her renk biraz gecikmeli başlar
+                }, index * 50);
             });
         }
 
@@ -355,6 +386,22 @@
 
             // Her 100ms'de bir kontrol et
             setInterval(hideAllOverlays, 100);
+            
+            // 🎨 CABLES PATCH'İNE ERİŞ - Renk kontrolü için
+            console.log('🔧 Cables patch yüklendi, ops sayısı:', patch.ops.length);
+            
+            // Tüm ops'ları tara, renk ile ilgili olanları bul
+            window.CABLES_OPS = patch.ops;
+            patch.ops.forEach((op, index) => {
+                // Color, RGB veya Paint içeren operatörleri logla
+                if (op.objName && (
+                    op.objName.toLowerCase().includes('color') ||
+                    op.objName.toLowerCase().includes('rgb') ||
+                    op.objName.toLowerCase().includes('paint')
+                )) {
+                    console.log(`🎨 Op ${index}: ${op.objName}`, op);
+                }
+            });
         }
 
         // D tuşunu ve diğer ayar tuşlarını engelle
