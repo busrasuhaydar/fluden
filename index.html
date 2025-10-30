@@ -93,20 +93,44 @@
             canvas.style.height = '100vh';
         }
 
+        // ZORLA TAM EKRAN - Cables override
+        function forceCanvasResize() {
+            const canvas = document.getElementById('glcanvas');
+            if (!canvas) return;
+            
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            
+            canvas.width = w;
+            canvas.height = h;
+            canvas.style.cssText = `
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                width: ${w}px !important;
+                height: ${h}px !important;
+                display: block !important;
+            `;
+            
+            // Cables'e resize event gönder
+            if (CABLES && CABLES.patch) {
+                window.dispatchEvent(new Event('resize'));
+            }
+            
+            console.log('🎯 FORCED resize:', w, 'x', h);
+        }
+
         // MESAJ ALICI SİSTEM - Piyanodan renk mesajları al
         window.addEventListener('message', (event) => {
-            // Güvenlik için origin kontrolü (production'da origin kontrol et)
-            // if (event.origin !== "https://yoursite.com") return;
-            
             if (event.data.type === 'pianoKeyPress') {
-                const colors = event.data.colors; // PNG'den gelen renkler array
-                const key = event.data.key; // Hangi tuş basıldı
+                const colors = event.data.colors;
+                const key = event.data.key;
                 const x = event.data.x || Math.random() * window.innerWidth;
                 const y = event.data.y || Math.random() * window.innerHeight;
                 
-                console.log('Piyanodan mesaj alındı:', key, colors);
+                console.log('📨 Piyanodan mesaj:', key, colors.length, 'renk');
+                console.log('🎨 Gelen renkler:', colors.slice(0, 5).map(c => `rgb(${c.r},${c.g},${c.b})`));
                 
-                // Fluid efektini tetikle
                 triggerFluidWithColors(colors, x, y);
             }
         });
@@ -276,11 +300,41 @@
                 startAutoMove();
             }, 1000);
 
+            // AGRESIF RESIZE - Cables yüklendikten sonra
+            setTimeout(() => forceCanvasResize(), 100);
+            setTimeout(() => forceCanvasResize(), 500);
+            setTimeout(() => forceCanvasResize(), 1000);
+            setTimeout(() => forceCanvasResize(), 2000);
+
             // Tüm overlay elementlerini gizle
             setTimeout(hideAllOverlays, 100);
             setTimeout(hideAllOverlays, 500);
             setTimeout(hideAllOverlays, 1000);
             setTimeout(hideAllOverlays, 2000);
+        }
+
+        function forceCanvasResize() {
+            const canvas = document.getElementById('glcanvas');
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            
+            // Canvas element boyutu
+            canvas.width = w;
+            canvas.height = h;
+            
+            // CSS boyutu
+            canvas.style.width = w + 'px';
+            canvas.style.height = h + 'px';
+            canvas.style.position = 'absolute';
+            canvas.style.top = '0px';
+            canvas.style.left = '0px';
+            
+            // Cables patch'i de resize et
+            if (CABLES.patch && CABLES.patch.cgl) {
+                CABLES.patch.cgl.setSize(w, h);
+            }
+            
+            console.log('🖼️ Canvas FORCED resize:', w, 'x', h);
         }
 
         function patchFinishedLoading(patch)
