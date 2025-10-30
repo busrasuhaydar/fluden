@@ -96,6 +96,60 @@
             setTimeout(resizeCanvas, 1000);
         });
 
+        // 🧪 VARIABLE İSİM TESTİ
+window.testFluidVariables = function() {
+    if (!fluidPatch) {
+        console.error('❌ Patch henüz yüklenmedi!');
+        return;
+    }
+    
+    console.log('🧪 Cables Patch Variable Testi Başlıyor...');
+    
+    // Tüm olası variable isimlerini dene
+    const testVariables = [
+        // Renk isimleri
+        'pianoColorR', 'pianoColorG', 'pianoColorB',
+        'colorR', 'colorG', 'colorB',
+        'r', 'g', 'b',
+        'red', 'green', 'blue',
+        'color_r', 'color_g', 'color_b',
+        
+        // Mouse pozisyonu
+        'MousePosX', 'MousePosY',
+        'mouseX', 'mouseY',
+        'posX', 'posY',
+        'mouse_x', 'mouse_y',
+        
+        // Mouse drag
+        'MouseIsDragged', 'mouseButtonDown',
+        'isDragging', 'isMouseDown',
+        'mouse_down', 'dragging',
+        
+        // Fluid parametreleri
+        'splatForce', 'splatRadius', 'colorIntensity',
+        'force', 'radius', 'intensity',
+        'splat_force', 'splat_radius'
+    ];
+    
+    console.log('📋 Mevcut Variable\'lar:');
+    let foundVars = [];
+    
+    testVariables.forEach(varName => {
+        try {
+            fluidPatch.setVariable(varName, 0.5);
+            foundVars.push(varName);
+            console.log(`✅ ${varName}`);
+        } catch (e) {
+            // Variable yok
+        }
+    });
+    
+    if (foundVars.length === 0) {
+        console.error('❌ HİÇBİR VARIABLE BULUNAMADI!');
+        console.log('🔍 Patch içindeki tüm variable\'ları listele:');
+        if (fluidPatch.vars) {
+            Object.keys(
+
         // 🎹 PİYANODAN MESAJ ALICI - DÜZELTİLMİŞ
         window.addEventListener('message', (event) => {
             if (event.data.type === 'pianoKeyPress') {
