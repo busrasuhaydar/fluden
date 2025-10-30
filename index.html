@@ -5,17 +5,24 @@
     <style>
         body {
             margin: 0;
+            padding: 0;
             background-color: #000;
             color: #fff;
             font-family: Helvetica, Arial, sans-serif;
             overflow: hidden;
-            height:100vh;
+            width: 100vw;
+            height: 100vh;
+            position: fixed;
         }
 
         canvas {
             display: block;
-            position: absolute;
-            outline:0;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw !important;
+            height: 100vh !important;
+            outline: 0;
         }
 
         * {
@@ -27,21 +34,30 @@
             user-select: none;
         }
 
-        /* GPU ve diğer overlay yazılarını gizle */
+        /* TÜM overlay, text, settings ve debug yazılarını GİZLE */
         .cables-info,
         .cables-fps,
         .cables-debug,
+        .cables-settings,
         div[style*="position: absolute"],
-        div[style*="z-index"] {
+        div[style*="position: fixed"],
+        div[style*="z-index"],
+        div[class*="cables"],
+        div[id*="cables"],
+        div[class*="settings"],
+        div[id*="settings"],
+        span, p, h1, h2, h3, h4, h5, h6,
+        div:not(#root):not(body) {
             display: none !important;
             visibility: hidden !important;
             opacity: 0 !important;
+            pointer-events: none !important;
         }
 
     </style>
 
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
     <meta itemprop="name" content="Fluid from bodyHands">
     <meta itemprop="description" content="made with cables">
     <meta itemprop="image" content="screenshot.png">
@@ -49,7 +65,7 @@
 
 </head>
 <body>
-    <canvas id="glcanvas" width="100vw" height="100vh" tabindex="1"></canvas>
+    <canvas id="glcanvas" tabindex="1"></canvas>
 
     
     <script type="text/javascript" src="js/patch.js" async></script>
@@ -59,8 +75,22 @@
 
         function showError(initiator,...args)
         {
-            CABLES.logErrorConsole("[" + initiator + "]", ...args);
+            // Error mesajlarını da console'a yazma
+            // CABLES.logErrorConsole("[" + initiator + "]", ...args);
         }
+
+        // Canvas boyutlandırma fonksiyonu
+        function resizeCanvas() {
+            const canvas = document.getElementById('glcanvas');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            canvas.style.width = window.innerWidth + 'px';
+            canvas.style.height = window.innerHeight + 'px';
+        }
+
+        // Sayfa yüklendiğinde ve boyut değiştiğinde canvas'ı ayarla
+        window.addEventListener('load', resizeCanvas);
+        window.addEventListener('resize', resizeCanvas);
 
         // Otomatik mouse hareketi için değişkenler
         let autoMoveActive = false;
@@ -138,68 +168,73 @@
             }, 16); // ~60 FPS
         }
 
+        // TÜM overlay elementlerini sürekli temizle
+        function hideAllOverlays() {
+            const allElements = document.querySelectorAll('div, span, p, h1, h2, h3, h4, h5, h6');
+            allElements.forEach(elem => {
+                if (elem.id !== 'glcanvas' && elem.tagName.toLowerCase() !== 'canvas') {
+                    elem.style.display = 'none';
+                    elem.style.visibility = 'hidden';
+                    elem.style.opacity = '0';
+                    elem.style.pointerEvents = 'none';
+                }
+            });
+        }
+
         function patchInitialized(patch)
         {
+            resizeCanvas();
+            
             // Patch yüklendiğinde otomatik hareketi başlat
             setTimeout(() => {
                 startAutoMove();
             }, 1000);
 
             // Tüm overlay elementlerini gizle
-            setTimeout(() => {
-                const allDivs = document.querySelectorAll('div');
-                allDivs.forEach(div => {
-                    const style = window.getComputedStyle(div);
-                    if (style.position === 'absolute' || style.position === 'fixed') {
-                        div.style.display = 'none';
-                        div.style.visibility = 'hidden';
-                        div.style.opacity = '0';
-                    }
-                });
-            }, 500);
+            setTimeout(hideAllOverlays, 100);
+            setTimeout(hideAllOverlays, 500);
+            setTimeout(hideAllOverlays, 1000);
+            setTimeout(hideAllOverlays, 2000);
         }
 
         function patchFinishedLoading(patch)
         {
-            // Yükleme bittiğinde de overlay kontrolü yap
+            resizeCanvas();
+            hideAllOverlays();
+            
+            // Yükleme bittiğinde de overlay kontrolü yap - sürekli izle
             const observer = new MutationObserver(() => {
-                const allDivs = document.querySelectorAll('div');
-                allDivs.forEach(div => {
-                    const style = window.getComputedStyle(div);
-                    if (style.position === 'absolute' || style.position === 'fixed') {
-                        div.style.display = 'none';
-                    }
-                });
+                hideAllOverlays();
             });
-            observer.observe(document.body, { childList: true, subtree: true });
+            observer.observe(document.body, { 
+                childList: true, 
+                subtree: true,
+                attributes: true,
+                characterData: true
+            });
+
+            // Her 100ms'de bir kontrol et
+            setInterval(hideAllOverlays, 100);
         }
 
-        document.addEventListener("CABLES.jsLoaded", function (event)
-        {
-            CABLES.patch = new CABLES.Patch({
-                patch: CABLES.exportedPatch,
-                "prefixAssetPath": "",
-                "assetPath": "assets/",
-                "jsPath": "js/",
-                "glCanvasId": "glcanvas",
-                "glCanvasResizeToWindow": true,
-                "onError": showError,
-                "onPatchLoaded": patchInitialized,
-                "onFinishedLoading": patchFinishedLoading,
-                "canvas": {"alpha":true, "premultipliedAlpha":true }
-            });
-        });
-
-        // Klavye tuşlarına basıldığında fluid efekti
-        let keyPressPositions = [];
+        // D tuşunu ve diğer ayar tuşlarını engelle
         document.addEventListener('keydown', (e) => {
-            // Rastgele bir pozisyon seç veya spiral pattern oluştur
+            // D tuşu, ESC, F1-F12 ve diğer ayar tuşlarını engelle
+            if (e.key === 'd' || e.key === 'D' || 
+                e.key === 'Escape' || 
+                e.key.startsWith('F') ||
+                e.key === 'Tab' ||
+                e.ctrlKey || e.metaKey || e.altKey) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                return false;
+            }
+
+            // Klavye tuşlarına basıldığında fluid efekti
             const x = Math.random() * window.innerWidth;
             const y = Math.random() * window.innerHeight;
             
-            keyPressPositions.push({x, y, time: Date.now()});
-            
-            // Mouse down simüle et
             simulateMouseDown(x, y);
             
             // Kısa bir süre boyunca etrafında hareket et
@@ -218,6 +253,45 @@
                     simulateMouseUp(newX, newY);
                 }
             }, 16);
+        }, true); // true = capture phase, en önce yakala
+
+        // Keyup eventi de engelle
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'd' || e.key === 'D' || 
+                e.key === 'Escape' || 
+                e.key.startsWith('F') ||
+                e.ctrlKey || e.metaKey || e.altKey) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                return false;
+            }
+        }, true);
+
+        // Keypress eventi de engelle
+        document.addEventListener('keypress', (e) => {
+            if (e.key === 'd' || e.key === 'D') {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                return false;
+            }
+        }, true);
+
+        document.addEventListener("CABLES.jsLoaded", function (event)
+        {
+            CABLES.patch = new CABLES.Patch({
+                patch: CABLES.exportedPatch,
+                "prefixAssetPath": "",
+                "assetPath": "assets/",
+                "jsPath": "js/",
+                "glCanvasId": "glcanvas",
+                "glCanvasResizeToWindow": true,
+                "onError": showError,
+                "onPatchLoaded": patchInitialized,
+                "onFinishedLoading": patchFinishedLoading,
+                "canvas": {"alpha":true, "premultipliedAlpha":true }
+            });
         });
 
         // Ekrana tıklandığında otomatik hareket toggle
@@ -254,6 +328,12 @@
 
         // disable rubberband effect on mobile devices
         document.getElementById('glcanvas').addEventListener('touchmove', (e)=>{ e.preventDefault(); }, false);
+
+        // Sayfa yüklendiğinde hemen overlay temizliği başlat
+        document.addEventListener('DOMContentLoaded', () => {
+            resizeCanvas();
+            setInterval(hideAllOverlays, 100);
+        });
     </script>
 </body>
 </html>
