@@ -187,55 +187,6 @@
 
         // disable rubberband effect on mobile devices
         document.getElementById('glcanvas').addEventListener('touchmove', (e)=>{ e.preventDefault(); }, false);
-// 🎨 PİYANODAN MESAJ ALICI - EKLENMİŞ VERSİYON
-window.addEventListener('message', (event) => {
-    console.log('📨 Mesaj alındı:', event.data);
-    
-    if (event.data.type === 'pianoKeyPress') {
-        const colors = event.data.colors;
-        const key = event.data.key;
-        const x = event.data.x || window.innerWidth / 2;
-        const y = event.data.y || window.innerHeight / 2;
-        
-        if (!colors || colors.length === 0) {
-            console.warn('⚠️ Renk paleti boş!');
-            return;
-        }
-        
-        const color = colors[0];
-        console.log('🎨', key.toUpperCase(), '→', `rgb(${color.r},${color.g},${color.b})`);
-        
-        if (fluidPatch) {
-            // Renkleri 0-1 aralığına normalize et
-            fluidPatch.setVariable('pianoColorR', color.r / 255);
-            fluidPatch.setVariable('pianoColorG', color.g / 255);
-            fluidPatch.setVariable('pianoColorB', color.b / 255);
-            
-            // Mouse pozisyonu
-            const normalizedX = x / window.innerWidth;
-            const normalizedY = y / window.innerHeight;
-            
-            fluidPatch.setVariable('MousePosX', normalizedX);
-            fluidPatch.setVariable('MousePosY', normalizedY);
-            fluidPatch.setVariable('MouseIsDragged', 1);
-            fluidPatch.setVariable('mouseButtonDown', 1);
-            
-            console.log('✅ Fluid variables güncellendi!');
-            
-            setTimeout(() => {
-                if (fluidPatch) {
-                    fluidPatch.setVariable('MouseIsDragged', 0);
-                    fluidPatch.setVariable('mouseButtonDown', 0);
-                }
-            }, 300);
-        } else {
-            console.error('❌ fluidPatch bulunamadı!');
-        }
-    }
-});
-
-console.log('🎹 Piano mesaj dinleyicisi aktif!');
-        
     </script>
 </body>
 </html>
