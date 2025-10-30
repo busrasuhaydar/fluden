@@ -3,32 +3,30 @@
 <head>
     <title>Fluid from bodyHands</title>
     <style>
-        html, body {
+        * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
             background-color: #000;
             color: #fff;
             font-family: Helvetica, Arial, sans-serif;
             overflow: hidden;
-            width: 100%;
-            height: 100%;
             position: fixed;
-            top: 0;
-            left: 0;
         }
 
         #glcanvas {
             display: block;
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            bottom: 0 !important;
-            width: 100% !important;
-            height: 100% !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            outline: 0 !important;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            outline: 0;
         }
 
         * {
@@ -90,8 +88,57 @@
             const canvas = document.getElementById('glcanvas');
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            canvas.style.width = window.innerWidth + 'px';
-            canvas.style.height = window.innerHeight + 'px';
+            canvas.style.width = '100vw';
+            canvas.style.height = '100vh';
+        }
+
+        // MESAJ ALICI SİSTEM - Piyanodan renk mesajları al
+        window.addEventListener('message', (event) => {
+            // Güvenlik için origin kontrolü (production'da origin kontrol et)
+            // if (event.origin !== "https://yoursite.com") return;
+            
+            if (event.data.type === 'pianoKeyPress') {
+                const colors = event.data.colors; // PNG'den gelen renkler array
+                const key = event.data.key; // Hangi tuş basıldı
+                const x = event.data.x || Math.random() * window.innerWidth;
+                const y = event.data.y || Math.random() * window.innerHeight;
+                
+                console.log('Piyanodan mesaj alındı:', key, colors);
+                
+                // Fluid efektini tetikle
+                triggerFluidWithColors(colors, x, y);
+            }
+        });
+
+        // Renkleri fluid'e uygula ve efekti tetikle
+        function triggerFluidWithColors(colors, x, y) {
+            if (!colors || colors.length === 0) return;
+            
+            // Rastgele bir renk seç (veya hepsini kullan)
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            
+            // Mouse down simüle et
+            simulateMouseDown(x, y);
+            
+            // Spiral hareket ile efekt oluştur
+            let angle = 0;
+            let radius = 0;
+            let moveCount = 0;
+            
+            const spiralInterval = setInterval(() => {
+                angle += 0.3;
+                radius += 3;
+                const newX = x + Math.cos(angle) * radius;
+                const newY = y + Math.sin(angle) * radius;
+                
+                simulateMouseMove(newX, newY);
+                moveCount++;
+                
+                if (moveCount > 20 || radius > 200) {
+                    clearInterval(spiralInterval);
+                    simulateMouseUp(newX, newY);
+                }
+            }, 16);
         }
 
         // Sayfa yüklendiğinde ve boyut değiştiğinde canvas'ı ayarla
