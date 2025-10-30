@@ -112,30 +112,51 @@
         });
 
         // Renkleri fluid'e uygula ve efekti tetikle
+        // Renkleri fluid'e uygula ve efekti tetikle - GELİŞMİŞ SİSTEM
         function triggerFluidWithColors(colors, x, y) {
-            if (!colors || colors.length === 0) return;
+            if (!colors || colors.length === 0) {
+                colors = [{ r: 255, g: 100, b: 200 }];
+            }
             
-            // Rastgele bir renk seç (veya hepsini kullan)
-            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            console.log('🎨 Fluid tetikleniyor:', colors.length, 'renk');
             
-            // Mouse down simüle et
+            // HER RENKTEN BİR EFEKT OLUŞTUR (max 5 renk)
+            const colorsToUse = colors.slice(0, 5);
+            
+            colorsToUse.forEach((color, index) => {
+                setTimeout(() => {
+                    // Her renk için farklı açıda başla
+                    const startAngle = (index / colorsToUse.length) * Math.PI * 2;
+                    const offsetX = Math.cos(startAngle) * 50;
+                    const offsetY = Math.sin(startAngle) * 50;
+                    const startX = x + offsetX;
+                    const startY = y + offsetY;
+                    
+                    createColorfulSpiral(startX, startY, color, index);
+                }, index * 50); // Her renk biraz gecikmeli başlar
+            });
+        }
+
+        // Renkli spiral efekt oluştur
+        function createColorfulSpiral(x, y, color, index) {
             simulateMouseDown(x, y);
             
-            // Spiral hareket ile efekt oluştur
-            let angle = 0;
+            let angle = index * 1.2; // Her spiral farklı açıda başlar
             let radius = 0;
             let moveCount = 0;
+            const maxMoves = 25 + Math.random() * 10;
             
             const spiralInterval = setInterval(() => {
-                angle += 0.3;
-                radius += 3;
+                angle += 0.4 + (index * 0.1); // Her spiral farklı hızda döner
+                radius += 2.5 + Math.random();
+                
                 const newX = x + Math.cos(angle) * radius;
                 const newY = y + Math.sin(angle) * radius;
                 
                 simulateMouseMove(newX, newY);
                 moveCount++;
                 
-                if (moveCount > 20 || radius > 200) {
+                if (moveCount > maxMoves || radius > 250) {
                     clearInterval(spiralInterval);
                     simulateMouseUp(newX, newY);
                 }
@@ -143,8 +164,19 @@
         }
 
         // Sayfa yüklendiğinde ve boyut değiştiğinde canvas'ı ayarla
-        window.addEventListener('load', resizeCanvas);
+        window.addEventListener('load', () => {
+            resizeCanvas();
+            setTimeout(resizeCanvas, 100);
+            setTimeout(resizeCanvas, 500);
+            setTimeout(resizeCanvas, 1000);
+        });
         window.addEventListener('resize', resizeCanvas);
+        
+        // iframe'de yüklendiğinde de resize
+        if (window.parent !== window) {
+            setTimeout(resizeCanvas, 100);
+            setTimeout(resizeCanvas, 500);
+        }
 
         // Otomatik mouse hareketi için değişkenler
         let autoMoveActive = false;
