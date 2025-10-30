@@ -75,17 +75,29 @@
             console.log('🎨 Fluid yüklendi, piano mesajları bekleniyor...');
         }
 
-        // Canvas tam ekran
+        // Canvas tam ekran - AGRESIF
         function resizeCanvas() {
             const canvas = document.getElementById('glcanvas');
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            canvas.style.width = window.innerWidth + 'px';
-            canvas.style.height = window.innerHeight + 'px';
-            canvas.style.position = 'fixed';
-            canvas.style.top = '0';
-            canvas.style.left = '0';
-            console.log('📐 Canvas:', canvas.width, 'x', canvas.height);
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            
+            canvas.width = w;
+            canvas.height = h;
+            canvas.style.cssText = `
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                width: ${w}px !important;
+                height: ${h}px !important;
+                display: block !important;
+            `;
+            
+            console.log('📐 Canvas FORCED:', w, 'x', h);
+            
+            // Cables'e resize event gönder
+            if (typeof CABLES !== 'undefined' && CABLES.patch) {
+                window.dispatchEvent(new Event('resize'));
+            }
         }
 
         window.addEventListener('resize', resizeCanvas);
@@ -109,7 +121,7 @@
                 // İlk rengi kullan
                 const color = colors[0];
                 
-                console.log('🎨 Piano:', key.toUpperCase(), '→', `rgb(${color.r},${color.g},${color.b})`);
+                console.log('🎨', key.toUpperCase(), '→', `rgb(${color.r},${color.g},${color.b})`);
                 
                 // SplatColor'ı güncelle - ARRAY formatında [R, G, B] 0-1 normalize
                 if (fluidPatch) {
@@ -120,20 +132,23 @@
                     ];
                     
                     fluidPatch.setVariable('SplatColor', normalizedColor);
-                    console.log('✅ SplatColor set:', normalizedColor);
                     
                     // Mouse pozisyonunu ayarla (0-1 normalize)
                     const normalizedX = x / window.innerWidth;
-                    const normalizedY = y / window.innerHeight;
+                    const normalizedY = 1.0 - (y / window.innerHeight); // Y'yi ters çevir
                     
                     fluidPatch.setVariable('MousePosX', normalizedX);
                     fluidPatch.setVariable('MousePosY', normalizedY);
                     
-                    // Mouse drag simüle et
+                    // Mouse force ve drag
+                    fluidPatch.setVariable('MouseSplatForce', 8000); // Güçlü efekt
+                    fluidPatch.setVariable('SplatRadius', 0.25);
                     fluidPatch.setVariable('MouseIsDragged', 1);
                     fluidPatch.setVariable('mouseButtonDown', 1);
                     
-                    // Spiral hareket
+                    console.log('✅ Fluid tetiklendi:', normalizedX.toFixed(2), normalizedY.toFixed(2));
+                    
+                    // Spiral hareket - DAHA GÜÇLÜ
                     createSpiralEffect(normalizedX, normalizedY, normalizedColor);
                     
                     // Mouse up
@@ -142,21 +157,21 @@
                             fluidPatch.setVariable('MouseIsDragged', 0);
                             fluidPatch.setVariable('mouseButtonDown', 0);
                         }
-                    }, 400);
+                    }, 500);
                 }
             }
         });
 
-        // Spiral efekt oluştur
+        // Spiral efekt oluştur - GÜÇLÜ
         function createSpiralEffect(startX, startY, color) {
             let angle = 0;
             let radius = 0;
             let step = 0;
-            const maxSteps = 25;
+            const maxSteps = 30;
             
             const spiralInterval = setInterval(() => {
-                angle += 0.5;
-                radius += 0.015;
+                angle += 0.6;
+                radius += 0.012;
                 
                 const x = startX + Math.cos(angle) * radius;
                 const y = startY + Math.sin(angle) * radius;
@@ -164,15 +179,16 @@
                 if (fluidPatch) {
                     fluidPatch.setVariable('MousePosX', Math.max(0, Math.min(1, x)));
                     fluidPatch.setVariable('MousePosY', Math.max(0, Math.min(1, y)));
-                    // Her adımda rengi tekrar set et
                     fluidPatch.setVariable('SplatColor', color);
+                    fluidPatch.setVariable('MouseSplatForce', 8000);
+                    fluidPatch.setVariable('MouseIsDragged', 1);
                 }
                 
                 step++;
                 if (step > maxSteps) {
                     clearInterval(spiralInterval);
                 }
-            }, 25);
+            }, 20);
         }
 
         document.addEventListener("CABLES.jsLoaded", function (event)
