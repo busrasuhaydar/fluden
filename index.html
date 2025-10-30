@@ -28,6 +28,22 @@
             height: 100vh;
             outline: 0;
             background: transparent !important; /* ŞEFFAF */
+            z-index: 2;
+        }
+
+        @keyframes glowFade {
+            0% {
+                opacity: 1;
+                transform: scale(0.5);
+            }
+            50% {
+                opacity: 0.8;
+                transform: scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(1.5);
+            }
         }
 
         * {
@@ -136,48 +152,22 @@
         });
 
         // Renkleri fluid'e uygula ve efekti tetikle
-        // Renkleri fluid'e uygula ve efekti tetikle - GELİŞMİŞ SİSTEM
-        let currentColorOps = null;
-        
+        // Renkleri fluid'e uygula ve efekti tetikle - OVERLAY SİSTEMİ
         function triggerFluidWithColors(colors, x, y) {
             if (!colors || colors.length === 0) {
                 colors = [{ r: 255, g: 100, b: 200 }];
             }
             
-            console.log('🎨 Fluid tetikleniyor:', colors.length, 'renk');
-            console.log('🌈 İlk 3 renk:', colors.slice(0, 3).map(c => 
+            console.log('🎨 Fluid + Glow:', colors.length, 'renk');
+            console.log('🌈 Renkler:', colors.slice(0, 3).map(c => 
                 `rgb(${c.r},${c.g},${c.b})`
             ).join(' | '));
             
-            // 🔥 CABLES OPS'LARINI DEĞİŞTİR
-            if (CABLES && CABLES.patch && CABLES.patch.ops) {
-                // Renk operatörünü bul ve değiştir
-                CABLES.patch.ops.forEach(op => {
-                    if (op.portsIn) {
-                        op.portsIn.forEach(port => {
-                            // R, G, B portlarını bul
-                            if (port.name === 'r' || port.name === 'R' || port.name === 'red') {
-                                const color = colors[0];
-                                port.set(color.r / 255);
-                                console.log('🔴 R değişti:', color.r);
-                            }
-                            if (port.name === 'g' || port.name === 'G' || port.name === 'green') {
-                                const color = colors[0];
-                                port.set(color.g / 255);
-                                console.log('🟢 G değişti:', color.g);
-                            }
-                            if (port.name === 'b' || port.name === 'B' || port.name === 'blue') {
-                                const color = colors[0];
-                                port.set(color.b / 255);
-                                console.log('🔵 B değişti:', color.b);
-                            }
-                        });
-                    }
-                });
-            }
+            // PNG'den gelen renkleri GLOW EFFECT olarak göster
+            createColorGlow(x, y, colors);
             
-            // HER RENKTEN BİR EFEKT OLUŞTUR (max 5 renk)
-            const colorsToUse = colors.slice(0, 5);
+            // Normal fluid mouse efektleri
+            const colorsToUse = colors.slice(0, 3);
             
             colorsToUse.forEach((color, index) => {
                 setTimeout(() => {
@@ -189,6 +179,50 @@
                     
                     createColorfulSpiral(startX, startY, color, index);
                 }, index * 50);
+            });
+        }
+
+        // PNG renklerini GLOW effect olarak göster
+        function createColorGlow(x, y, colors) {
+            const glowContainer = document.getElementById('glow-container');
+            if (!glowContainer) {
+                const container = document.createElement('div');
+                container.id = 'glow-container';
+                container.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100vw;
+                    height: 100vh;
+                    pointer-events: none;
+                    z-index: 1;
+                `;
+                document.body.insertBefore(container, document.body.firstChild);
+            }
+            
+            colors.slice(0, 5).forEach((color, index) => {
+                const glow = document.createElement('div');
+                const size = 200 + Math.random() * 200;
+                
+                glow.style.cssText = `
+                    position: absolute;
+                    left: ${x - size/2}px;
+                    top: ${y - size/2}px;
+                    width: ${size}px;
+                    height: ${size}px;
+                    border-radius: 50%;
+                    background: radial-gradient(circle, 
+                        rgba(${color.r}, ${color.g}, ${color.b}, 0.4) 0%,
+                        rgba(${color.r}, ${color.g}, ${color.b}, 0.2) 40%,
+                        transparent 70%
+                    );
+                    pointer-events: none;
+                    animation: glowFade 2s ease-out forwards;
+                `;
+                
+                document.getElementById('glow-container').appendChild(glow);
+                
+                setTimeout(() => glow.remove(), 2000);
             });
         }
 
@@ -387,21 +421,7 @@
             // Her 100ms'de bir kontrol et
             setInterval(hideAllOverlays, 100);
             
-            // 🎨 CABLES PATCH'İNE ERİŞ - Renk kontrolü için
-            console.log('🔧 Cables patch yüklendi, ops sayısı:', patch.ops.length);
-            
-            // Tüm ops'ları tara, renk ile ilgili olanları bul
-            window.CABLES_OPS = patch.ops;
-            patch.ops.forEach((op, index) => {
-                // Color, RGB veya Paint içeren operatörleri logla
-                if (op.objName && (
-                    op.objName.toLowerCase().includes('color') ||
-                    op.objName.toLowerCase().includes('rgb') ||
-                    op.objName.toLowerCase().includes('paint')
-                )) {
-                    console.log(`🎨 Op ${index}: ${op.objName}`, op);
-                }
-            });
+            console.log('✅ Cables fluid hazır!');
         }
 
         // D tuşunu ve diğer ayar tuşlarını engelle
