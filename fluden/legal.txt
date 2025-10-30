@@ -1,0 +1,19 @@
+All cables core code is licenced under the MIT licence
+
+Some ops may be using code from contributors or external libraries under different licences.
+
+Additional code from contributors and libraries in this export are licenced as follows:
+
+MIT:
+
+- glmatrix by toji (https://github.com/toji/gl-matrix)
+- colorRick (https://github.com/pandrr/colorRick)
+
+Public Domain:
+
+- Photoshop math GLSL shaders by Romain Dura (https://mouaif.wordpress.com/2009/01/05/photoshop-math-with-glsl-shaders/)
+
+uploaded/unknown:
+
+- mqtt.min.js (/assets/66715646dbcd6083233ee611/mqtt.min.js)
+- umd_msgpack.min.js (/assets/66715646dbcd6083233ee611/umd_msgpack.min.js)
