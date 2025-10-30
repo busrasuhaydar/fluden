@@ -27,55 +27,103 @@
             user-select: none;
         }
 
+        /* DEBUG PANEL */
+        #debug-panel {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.9);
+            color: lime;
+            padding: 15px;
+            font-family: monospace;
+            font-size: 11px;
+            border: 2px solid lime;
+            border-radius: 5px;
+            max-height: 400px;
+            overflow-y: auto;
+            z-index: 99999;
+            min-width: 300px;
+        }
+
+        #debug-panel h3 {
+            margin: 0 0 10px 0;
+            color: #fff;
+            font-size: 14px;
+        }
+
+        .log {
+            margin: 3px 0;
+            padding: 3px 5px;
+            border-left: 3px solid #0f0;
+        }
+
+        .error { border-left-color: #f00; color: #f00; }
+        .success { border-left-color: #0f0; color: #0f0; }
+        .warn { border-left-color: #ff0; color: #ff0; }
+
     </style>
 
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1">
     <meta itemprop="name" content="busfluid">
     <meta itemprop="description" content="made with cables">
-    <meta itemprop="image" content="screenshot.png">
-    <meta name="description" content="made with cables"/>
-
 </head>
 <body>
     <canvas id="glcanvas" width="100vw" height="100vh" tabindex="1"></canvas>
 
-    
+    <!-- DEBUG PANEL -->
+    <div id="debug-panel">
+        <h3>🔍 FLUID DEBUG</h3>
+        <div id="debug-logs"></div>
+    </div>
+
     <script type="text/javascript" src="js/patch.js" async></script>
-    
 
     <script type="text/javascript">
+        // DEBUG LOGGER
+        const debugLogs = document.getElementById('debug-logs');
+        let logCount = 0;
 
-        // 🎹 PIANO RENK SİSTEMİ - Global değişkenler
-        let fluidPatch = null;
-
-        function showError(initiator,...args)
-        {
-            CABLES.logErrorConsole("[" + initiator + "]", ...args);
+        function addLog(message, type = 'log') {
+            logCount++;
+            const log = document.createElement('div');
+            log.className = `log ${type}`;
+            log.textContent = `[${logCount}] ${message}`;
+            debugLogs.appendChild(log);
+            
+            if (debugLogs.children.length > 30) {
+                debugLogs.removeChild(debugLogs.firstChild);
+            }
+            
+            debugLogs.scrollTop = debugLogs.scrollHeight;
+            console.log(`[${type.toUpperCase()}]`, message);
         }
 
-        function patchInitialized(patch)
-        {
-            // Patch'i global olarak sakla
+        let fluidPatch = null;
+
+        function showError(initiator,...args) {
+            CABLES.logErrorConsole("[" + initiator + "]", ...args);
+            addLog(`ERROR: ${initiator} - ${args.join(' ')}`, 'error');
+        }
+
+        function patchInitialized(patch) {
             fluidPatch = patch;
+            addLog('✅ Patch initialized!', 'success');
             
-            // Variable'ları başlat (0-1 aralığında)
+            // Test variable'ları
             patch.setVariable('pianoColorR', 0.5);
             patch.setVariable('pianoColorG', 0.5);
             patch.setVariable('pianoColorB', 0.5);
             
-            console.log('✅ Cables patch hazır - Piano renk sistemi aktif!');
+            addLog('✅ Default variables set', 'success');
         }
 
-        function patchFinishedLoading(patch)
-        {
-            // Canvas'ı tam ekran yap
+        function patchFinishedLoading(patch) {
             resizeCanvas();
-            
-            console.log('🎨 Fluid yüklendi, piano mesajları bekleniyor...');
+            addLog('✅ Patch loading finished!', 'success');
+            addLog('🎹 Listening for piano messages...', 'log');
         }
 
-        // Canvas tam ekran
         function resizeCanvas() {
             const canvas = document.getElementById('glcanvas');
             canvas.width = window.innerWidth;
@@ -85,7 +133,6 @@
             canvas.style.position = 'fixed';
             canvas.style.top = '0';
             canvas.style.left = '0';
-            console.log('📐 Canvas:', canvas.width, 'x', canvas.height);
         }
 
         window.addEventListener('resize', resizeCanvas);
@@ -93,82 +140,31 @@
             resizeCanvas();
             setTimeout(resizeCanvas, 100);
             setTimeout(resizeCanvas, 500);
-            setTimeout(resizeCanvas, 1000);
         });
 
-        // 🧪 VARIABLE İSİM TESTİ
-window.testFluidVariables = function() {
-    if (!fluidPatch) {
-        console.error('❌ Patch henüz yüklenmedi!');
-        return;
-    }
-    
-    console.log('🧪 Cables Patch Variable Testi Başlıyor...');
-    
-    // Tüm olası variable isimlerini dene
-    const testVariables = [
-        // Renk isimleri
-        'pianoColorR', 'pianoColorG', 'pianoColorB',
-        'colorR', 'colorG', 'colorB',
-        'r', 'g', 'b',
-        'red', 'green', 'blue',
-        'color_r', 'color_g', 'color_b',
+        // 🎹 PİYANO MESAJ DİNLEYİCİSİ
+        let messageReceived = 0;
         
-        // Mouse pozisyonu
-        'MousePosX', 'MousePosY',
-        'mouseX', 'mouseY',
-        'posX', 'posY',
-        'mouse_x', 'mouse_y',
-        
-        // Mouse drag
-        'MouseIsDragged', 'mouseButtonDown',
-        'isDragging', 'isMouseDown',
-        'mouse_down', 'dragging',
-        
-        // Fluid parametreleri
-        'splatForce', 'splatRadius', 'colorIntensity',
-        'force', 'radius', 'intensity',
-        'splat_force', 'splat_radius'
-    ];
-    
-    console.log('📋 Mevcut Variable\'lar:');
-    let foundVars = [];
-    
-    testVariables.forEach(varName => {
-        try {
-            fluidPatch.setVariable(varName, 0.5);
-            foundVars.push(varName);
-            console.log(`✅ ${varName}`);
-        } catch (e) {
-            // Variable yok
-        }
-    });
-    
-    if (foundVars.length === 0) {
-        console.error('❌ HİÇBİR VARIABLE BULUNAMADI!');
-        console.log('🔍 Patch içindeki tüm variable\'ları listele:');
-        if (fluidPatch.vars) {
-            Object.keys(
-
-        // 🎹 PİYANODAN MESAJ ALICI - DÜZELTİLMİŞ
         window.addEventListener('message', (event) => {
-            if (event.data.type === 'pianoKeyPress') {
+            messageReceived++;
+            addLog(`📨 Message #${messageReceived} received from: ${event.origin}`, 'log');
+            
+            if (event.data && event.data.type === 'pianoKeyPress') {
                 const colors = event.data.colors;
                 const key = event.data.key;
                 const x = event.data.x || window.innerWidth / 2;
                 const y = event.data.y || window.innerHeight / 2;
                 
+                addLog(`🎹 Piano key: ${key.toUpperCase()}`, 'success');
+                
                 if (!colors || colors.length === 0) {
-                    console.warn('⚠️ Renk paleti boş!');
+                    addLog('⚠️ No colors in message!', 'warn');
                     return;
                 }
                 
-                // İlk rengi kullan
                 const color = colors[0];
+                addLog(`🎨 Color: rgb(${color.r},${color.g},${color.b})`, 'log');
                 
-                console.log('🎨', key.toUpperCase(), '→', `rgb(${color.r},${color.g},${color.b})`);
-                
-                // Cables variable'larını güncelle (0-1 aralığına normalize et)
                 if (fluidPatch) {
                     try {
                         // Renkleri ayarla
@@ -176,32 +172,37 @@ window.testFluidVariables = function() {
                         fluidPatch.setVariable('pianoColorG', color.g / 255);
                         fluidPatch.setVariable('pianoColorB', color.b / 255);
                         
-                        // Mouse pozisyonunu ayarla (0-1 normalize)
+                        addLog('✅ Colors set!', 'success');
+                        
+                        // Mouse pozisyonu
                         const normalizedX = x / window.innerWidth;
                         const normalizedY = y / window.innerHeight;
                         
                         fluidPatch.setVariable('MousePosX', normalizedX);
                         fluidPatch.setVariable('MousePosY', normalizedY);
-                        
-                        // Mouse drag simüle et
                         fluidPatch.setVariable('MouseIsDragged', 1);
                         fluidPatch.setVariable('mouseButtonDown', 1);
                         
-                        // 🔥 Eğer mesajdan force/radius geliyorsa onları da ayarla
+                        addLog('✅ Mouse position set!', 'success');
+                        
+                        // Force ve radius (eğer varsa)
                         if (event.data.force) {
-                            fluidPatch.setVariable('splatForce', event.data.force);
+                            try {
+                                fluidPatch.setVariable('splatForce', event.data.force);
+                                addLog(`✅ Force set: ${event.data.force}`, 'success');
+                            } catch(e) {
+                                addLog('⚠️ splatForce variable not found', 'warn');
+                            }
                         }
+                        
                         if (event.data.radius) {
-                            fluidPatch.setVariable('splatRadius', event.data.radius);
+                            try {
+                                fluidPatch.setVariable('splatRadius', event.data.radius);
+                                addLog(`✅ Radius set: ${event.data.radius}`, 'success');
+                            } catch(e) {
+                                addLog('⚠️ splatRadius variable not found', 'warn');
+                            }
                         }
-                        if (event.data.intensity) {
-                            fluidPatch.setVariable('colorIntensity', event.data.intensity);
-                        }
-                        
-                        console.log('✅ Fluid variables güncellendi!');
-                        
-                        // Spiral hareket
-                        createSpiralEffect(normalizedX, normalizedY);
                         
                         // Mouse up
                         setTimeout(() => {
@@ -210,47 +211,21 @@ window.testFluidVariables = function() {
                                 fluidPatch.setVariable('mouseButtonDown', 0);
                             }
                         }, 300);
+                        
                     } catch (error) {
-                        console.error('❌ Variable set hatası:', error);
+                        addLog(`❌ Error setting variables: ${error.message}`, 'error');
                     }
                 } else {
-                    console.error('❌ fluidPatch bulunamadı!');
+                    addLog('❌ fluidPatch not found!', 'error');
                 }
+            } else {
+                addLog(`ℹ️ Unknown message type: ${event.data ? event.data.type : 'no type'}`, 'log');
             }
         });
 
-        // Spiral efekt oluştur
-        function createSpiralEffect(startX, startY) {
-            let angle = 0;
-            let radius = 0;
-            let step = 0;
-            const maxSteps = 20;
+        document.addEventListener("CABLES.jsLoaded", function (event) {
+            addLog('📦 CABLES.js loaded', 'success');
             
-            const spiralInterval = setInterval(() => {
-                angle += 0.4;
-                radius += 0.02;
-                
-                const x = startX + Math.cos(angle) * radius;
-                const y = startY + Math.sin(angle) * radius;
-                
-                if (fluidPatch) {
-                    try {
-                        fluidPatch.setVariable('MousePosX', Math.max(0, Math.min(1, x)));
-                        fluidPatch.setVariable('MousePosY', Math.max(0, Math.min(1, y)));
-                    } catch (error) {
-                        // Ignore
-                    }
-                }
-                
-                step++;
-                if (step > maxSteps) {
-                    clearInterval(spiralInterval);
-                }
-            }, 30);
-        }
-
-        document.addEventListener("CABLES.jsLoaded", function (event)
-        {
             CABLES.patch = new CABLES.Patch({
                 patch: CABLES.exportedPatch,
                 "prefixAssetPath": "",
@@ -261,14 +236,14 @@ window.testFluidVariables = function() {
                 "onError": showError,
                 "onPatchLoaded": patchInitialized,
                 "onFinishedLoading": patchFinishedLoading,
-                "canvas": {"alpha":true, "premultipliedAlpha":true } // make canvas transparent
+                "canvas": {"alpha":true, "premultipliedAlpha":true }
             });
         });
 
-        // disable rubberband effect on mobile devices
         document.getElementById('glcanvas').addEventListener('touchmove', (e)=>{ e.preventDefault(); }, false);
-        
-        console.log('🎹 Piano mesaj dinleyicisi aktif!');
+
+        addLog('🚀 System initialized', 'success');
+        addLog('👂 Listening for messages...', 'log');
     </script>
 </body>
 </html>
