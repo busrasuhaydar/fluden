@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Fluid from bodyHands</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: #000;
+            color: #fff;
+            font-family: Helvetica, Arial, sans-serif;
+            overflow: hidden;
+            height:100vh;
+        }
+
+        canvas {
+            display: block;
+            position: absolute;
+            outline:0;
+        }
+
+        * {
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        /* GPU ve diğer overlay yazılarını gizle */
+        .cables-info,
+        .cables-fps,
+        .cables-debug,
+        div[style*="position: absolute"],
+        div[style*="z-index"] {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+        }
+
+    </style>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1">
+    <meta itemprop="name" content="Fluid from bodyHands">
+    <meta itemprop="description" content="made with cables">
+    <meta itemprop="image" content="screenshot.png">
+    <meta name="description" content="made with cables"/>
+
+</head>
+<body>
+    <canvas id="glcanvas" width="100vw" height="100vh" tabindex="1"></canvas>
+
+    
+    <script type="text/javascript" src="js/patch.js" async></script>
+    
+
+    <script type="text/javascript">
+
+        function showError(initiator,...args)
+        {
+            CABLES.logErrorConsole("[" + initiator + "]", ...args);
+        }
+
+        // Otomatik mouse hareketi için değişkenler
+        let autoMoveActive = false;
+        let autoMoveInterval = null;
+        let lastMouseX = window.innerWidth / 2;
+        let lastMouseY = window.innerHeight / 2;
+        let mouseVelocityX = (Math.random() - 0.5) * 10;
+        let mouseVelocityY = (Math.random() - 0.5) * 10;
+
+        function simulateMouseMove(x, y) {
+            const canvas = document.getElementById('glcanvas');
+            const event = new MouseEvent('mousemove', {
+                view: window,
+                bubbles: true,
+                cancelable: true,
+                clientX: x,
+                clientY: y
+            });
+            canvas.dispatchEvent(event);
+        }
+
+        function simulateMouseDown(x, y) {
+            const canvas = document.getElementById('glcanvas');
+            const event = new MouseEvent('mousedown', {
+                view: window,
+                bubbles: true,
+                cancelable: true,
+                clientX: x,
+                clientY: y,
+                button: 0
+            });
+            canvas.dispatchEvent(event);
+        }
+
+        function simulateMouseUp(x, y) {
+            const canvas = document.getElementById('glcanvas');
+            const event = new MouseEvent('mouseup', {
+                view: window,
+                bubbles: true,
+                cancelable: true,
+                clientX: x,
+                clientY: y,
+                button: 0
+            });
+            canvas.dispatchEvent(event);
+        }
+
+        function startAutoMove() {
+            if (autoMoveInterval) return;
+            
+            autoMoveActive = true;
+            autoMoveInterval = setInterval(() => {
+                // Yumuşak, organik hareket
+                mouseVelocityX += (Math.random() - 0.5) * 2;
+                mouseVelocityY += (Math.random() - 0.5) * 2;
+                
+                // Hız limitleyici
+                mouseVelocityX = Math.max(-8, Math.min(8, mouseVelocityX));
+                mouseVelocityY = Math.max(-8, Math.min(8, mouseVelocityY));
+                
+                lastMouseX += mouseVelocityX;
+                lastMouseY += mouseVelocityY;
+                
+                // Sınırları kontrol et ve sekme efekti
+                if (lastMouseX <= 0 || lastMouseX >= window.innerWidth) {
+                    mouseVelocityX *= -0.8;
+                    lastMouseX = Math.max(0, Math.min(window.innerWidth, lastMouseX));
+                }
+                if (lastMouseY <= 0 || lastMouseY >= window.innerHeight) {
+                    mouseVelocityY *= -0.8;
+                    lastMouseY = Math.max(0, Math.min(window.innerHeight, lastMouseY));
+                }
+                
+                simulateMouseMove(lastMouseX, lastMouseY);
+            }, 16); // ~60 FPS
+        }
+
+        function patchInitialized(patch)
+        {
+            // Patch yüklendiğinde otomatik hareketi başlat
+            setTimeout(() => {
+                startAutoMove();
+            }, 1000);
+
+            // Tüm overlay elementlerini gizle
+            setTimeout(() => {
+                const allDivs = document.querySelectorAll('div');
+                allDivs.forEach(div => {
+                    const style = window.getComputedStyle(div);
+                    if (style.position === 'absolute' || style.position === 'fixed') {
+                        div.style.display = 'none';
+                        div.style.visibility = 'hidden';
+                        div.style.opacity = '0';
+                    }
+                });
+            }, 500);
+        }
+
+        function patchFinishedLoading(patch)
+        {
+            // Yükleme bittiğinde de overlay kontrolü yap
+            const observer = new MutationObserver(() => {
+                const allDivs = document.querySelectorAll('div');
+                allDivs.forEach(div => {
+                    const style = window.getComputedStyle(div);
+                    if (style.position === 'absolute' || style.position === 'fixed') {
+                        div.style.display = 'none';
+                    }
+                });
+            });
+            observer.observe(document.body, { childList: true, subtree: true });
+        }
+
+        document.addEventListener("CABLES.jsLoaded", function (event)
+        {
+            CABLES.patch = new CABLES.Patch({
+                patch: CABLES.exportedPatch,
+                "prefixAssetPath": "",
+                "assetPath": "assets/",
+                "jsPath": "js/",
+                "glCanvasId": "glcanvas",
+                "glCanvasResizeToWindow": true,
+                "onError": showError,
+                "onPatchLoaded": patchInitialized,
+                "onFinishedLoading": patchFinishedLoading,
+                "canvas": {"alpha":true, "premultipliedAlpha":true }
+            });
+        });
+
+        // Klavye tuşlarına basıldığında fluid efekti
+        let keyPressPositions = [];
+        document.addEventListener('keydown', (e) => {
+            // Rastgele bir pozisyon seç veya spiral pattern oluştur
+            const x = Math.random() * window.innerWidth;
+            const y = Math.random() * window.innerHeight;
+            
+            keyPressPositions.push({x, y, time: Date.now()});
+            
+            // Mouse down simüle et
+            simulateMouseDown(x, y);
+            
+            // Kısa bir süre boyunca etrafında hareket et
+            let moveCount = 0;
+            const moveInterval = setInterval(() => {
+                const angle = (moveCount / 10) * Math.PI * 2;
+                const radius = 50 + moveCount * 3;
+                const newX = x + Math.cos(angle) * radius;
+                const newY = y + Math.sin(angle) * radius;
+                
+                simulateMouseMove(newX, newY);
+                moveCount++;
+                
+                if (moveCount > 15) {
+                    clearInterval(moveInterval);
+                    simulateMouseUp(newX, newY);
+                }
+            }, 16);
+        });
+
+        // Ekrana tıklandığında otomatik hareket toggle
+        document.getElementById('glcanvas').addEventListener('click', (e) => {
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+            
+            if (!autoMoveActive) {
+                startAutoMove();
+            } else {
+                // Tıklanan noktadan spiral hareket
+                const startX = e.clientX;
+                const startY = e.clientY;
+                let angle = 0;
+                let radius = 0;
+                
+                simulateMouseDown(startX, startY);
+                
+                const spiralInterval = setInterval(() => {
+                    angle += 0.3;
+                    radius += 2;
+                    const x = startX + Math.cos(angle) * radius;
+                    const y = startY + Math.sin(angle) * radius;
+                    
+                    simulateMouseMove(x, y);
+                    
+                    if (radius > 150) {
+                        clearInterval(spiralInterval);
+                        simulateMouseUp(x, y);
+                    }
+                }, 16);
+            }
+        });
+
+        // disable rubberband effect on mobile devices
+        document.getElementById('glcanvas').addEventListener('touchmove', (e)=>{ e.preventDefault(); }, false);
+    </script>
+</body>
+</html>
