@@ -47,7 +47,7 @@
 
     <script type="text/javascript">
 
-        // 🎹 PIANO RENK SİSTEMİ - Global değişkenler
+        // 🎹 PIANO RENK SİSTEMİ - SplatColor kullan
         let fluidPatch = null;
 
         function showError(initiator,...args)
@@ -60,12 +60,11 @@
             // Patch'i global olarak sakla
             fluidPatch = patch;
             
-            // Variable'ları başlat (0-255 değil, 0-1 aralığında olabilir!)
-            patch.setVariable('pianoColorR', 0.5);
-            patch.setVariable('pianoColorG', 0.5);
-            patch.setVariable('pianoColorB', 0.5);
+            // SplatColor başlat (Array [R, G, B] formatında, 0-1 normalize)
+            patch.setVariable('SplatColor', [0.5, 0.5, 0.8]);
             
-            console.log('✅ Cables patch hazır - Piano renk sistemi aktif!');
+            console.log('✅ Cables patch hazır - SplatColor sistemi aktif!');
+            console.log('📋 Mevcut variable\'lar:', Object.keys(patch.config.variables || {}));
         }
 
         function patchFinishedLoading(patch)
@@ -110,13 +109,18 @@
                 // İlk rengi kullan
                 const color = colors[0];
                 
-                console.log('🎨', key.toUpperCase(), '→', `rgb(${color.r},${color.g},${color.b})`);
+                console.log('🎨 Piano:', key.toUpperCase(), '→', `rgb(${color.r},${color.g},${color.b})`);
                 
-                // Cables variable'larını güncelle (0-1 aralığına normalize et)
+                // SplatColor'ı güncelle - ARRAY formatında [R, G, B] 0-1 normalize
                 if (fluidPatch) {
-                    fluidPatch.setVariable('pianoColorR', color.r / 255);
-                    fluidPatch.setVariable('pianoColorG', color.g / 255);
-                    fluidPatch.setVariable('pianoColorB', color.b / 255);
+                    const normalizedColor = [
+                        color.r / 255,
+                        color.g / 255,
+                        color.b / 255
+                    ];
+                    
+                    fluidPatch.setVariable('SplatColor', normalizedColor);
+                    console.log('✅ SplatColor set:', normalizedColor);
                     
                     // Mouse pozisyonunu ayarla (0-1 normalize)
                     const normalizedX = x / window.innerWidth;
@@ -130,7 +134,7 @@
                     fluidPatch.setVariable('mouseButtonDown', 1);
                     
                     // Spiral hareket
-                    createSpiralEffect(normalizedX, normalizedY);
+                    createSpiralEffect(normalizedX, normalizedY, normalizedColor);
                     
                     // Mouse up
                     setTimeout(() => {
@@ -138,21 +142,21 @@
                             fluidPatch.setVariable('MouseIsDragged', 0);
                             fluidPatch.setVariable('mouseButtonDown', 0);
                         }
-                    }, 300);
+                    }, 400);
                 }
             }
         });
 
         // Spiral efekt oluştur
-        function createSpiralEffect(startX, startY) {
+        function createSpiralEffect(startX, startY, color) {
             let angle = 0;
             let radius = 0;
             let step = 0;
-            const maxSteps = 20;
+            const maxSteps = 25;
             
             const spiralInterval = setInterval(() => {
-                angle += 0.4;
-                radius += 0.02;
+                angle += 0.5;
+                radius += 0.015;
                 
                 const x = startX + Math.cos(angle) * radius;
                 const y = startY + Math.sin(angle) * radius;
@@ -160,13 +164,15 @@
                 if (fluidPatch) {
                     fluidPatch.setVariable('MousePosX', Math.max(0, Math.min(1, x)));
                     fluidPatch.setVariable('MousePosY', Math.max(0, Math.min(1, y)));
+                    // Her adımda rengi tekrar set et
+                    fluidPatch.setVariable('SplatColor', color);
                 }
                 
                 step++;
                 if (step > maxSteps) {
                     clearInterval(spiralInterval);
                 }
-            }, 30);
+            }, 25);
         }
 
         document.addEventListener("CABLES.jsLoaded", function (event)
