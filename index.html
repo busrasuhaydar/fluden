@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>busfluid - DEBUG</title>
+    <title>busfluid</title>
     <style>
         body {
             margin: 0;
@@ -27,163 +27,55 @@
             user-select: none;
         }
 
-        #debug-overlay {
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            background: rgba(0, 0, 0, 0.9);
-            color: lime;
-            padding: 15px;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            border: 2px solid lime;
-            border-radius: 8px;
-            max-width: 500px;
-            z-index: 99999;
-        }
-
-        #debug-overlay h3 {
-            margin: 0 0 10px 0;
-            color: #fff;
-        }
-
-        #debug-overlay .log {
-            margin: 3px 0;
-            padding: 3px;
-            border-left: 3px solid #0f0;
-            padding-left: 8px;
-        }
-
-        #debug-overlay .error {
-            border-left-color: #f00;
-            color: #f00;
-        }
-
-        #debug-overlay .success {
-            border-left-color: #0f0;
-            color: #0f0;
-        }
-
-        #debug-overlay .warn {
-            border-left-color: #ff0;
-            color: #ff0;
-        }
-
-        #test-buttons {
-            position: fixed;
-            bottom: 10px;
-            left: 10px;
-            z-index: 99999;
-        }
-
-        .test-btn {
-            background: rgba(0, 255, 0, 0.2);
-            border: 2px solid #0f0;
-            color: #0f0;
-            padding: 10px 20px;
-            margin: 5px;
-            cursor: pointer;
-            font-family: monospace;
-            border-radius: 5px;
-            transition: all 0.3s;
-        }
-
-        .test-btn:hover {
-            background: rgba(0, 255, 0, 0.4);
-            transform: scale(1.05);
-        }
-
     </style>
 
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1">
+    <meta itemprop="name" content="busfluid">
+    <meta itemprop="description" content="made with cables">
+    <meta itemprop="image" content="screenshot.png">
+    <meta name="description" content="made with cables"/>
+
 </head>
 <body>
     <canvas id="glcanvas" width="100vw" height="100vh" tabindex="1"></canvas>
 
-    <!-- DEBUG OVERLAY -->
-    <div id="debug-overlay">
-        <h3>🔍 CABLES FLUID DEBUG</h3>
-        <div id="debug-logs"></div>
-    </div>
-
-    <!-- TEST BUTTONS -->
-    <div id="test-buttons">
-        <button class="test-btn" onclick="testColor('red')">🔴 Test Kırmızı</button>
-        <button class="test-btn" onclick="testColor('green')">🟢 Test Yeşil</button>
-        <button class="test-btn" onclick="testColor('blue')">🔵 Test Mavi</button>
-        <button class="test-btn" onclick="listVariables()">📋 Variable'ları Listele</button>
-    </div>
-
+    
     <script type="text/javascript" src="js/patch.js" async></script>
+    
 
     <script type="text/javascript">
-        // 🎨 DEBUG LOGGER
-        const debugLogs = document.getElementById('debug-logs');
-        let logCounter = 0;
 
-        function addLog(message, type = 'log') {
-            logCounter++;
-            const logDiv = document.createElement('div');
-            logDiv.className = `log ${type}`;
-            logDiv.textContent = `[${logCounter}] ${new Date().toLocaleTimeString()}: ${message}`;
-            debugLogs.appendChild(logDiv);
-            
-            // Keep only last 20 logs
-            if (debugLogs.children.length > 20) {
-                debugLogs.removeChild(debugLogs.firstChild);
-            }
-            
-            // Auto scroll
-            debugLogs.scrollTop = debugLogs.scrollHeight;
-            
-            console.log(`[${type.toUpperCase()}]`, message);
-        }
-
+        // 🎹 PIANO RENK SİSTEMİ - Global değişkenler
         let fluidPatch = null;
 
-        function showError(initiator,...args) {
+        function showError(initiator,...args)
+        {
             CABLES.logErrorConsole("[" + initiator + "]", ...args);
-            addLog(`ERROR: ${initiator} - ${args.join(' ')}`, 'error');
         }
 
-        function patchInitialized(patch) {
+        function patchInitialized(patch)
+        {
+            // Patch'i global olarak sakla
             fluidPatch = patch;
-            addLog('✅ Patch initialized!', 'success');
             
-            // Test tüm olası variable isimlerini
-            const possibleVarNames = [
-                'pianoColorR', 'pianoColorG', 'pianoColorB',
-                'colorR', 'colorG', 'colorB',
-                'r', 'g', 'b',
-                'red', 'green', 'blue',
-                'MousePosX', 'MousePosY',
-                'mouseX', 'mouseY',
-                'posX', 'posY',
-                'MouseIsDragged', 'mouseButtonDown',
-                'isDragging', 'isMouseDown'
-            ];
-
-            addLog('🔍 Variable'lar test ediliyor...', 'warn');
+            // Variable'ları başlat (0-1 aralığında)
+            patch.setVariable('pianoColorR', 0.5);
+            patch.setVariable('pianoColorG', 0.5);
+            patch.setVariable('pianoColorB', 0.5);
             
-            possibleVarNames.forEach(varName => {
-                try {
-                    patch.setVariable(varName, 0.5);
-                    addLog(`   ✓ ${varName} MEVCUT`, 'success');
-                } catch (e) {
-                    // Variable yok, sessizce devam et
-                }
-            });
-
-            addLog('📋 Mevcut variable'lar yukarıda listelendi', 'warn');
+            console.log('✅ Cables patch hazır - Piano renk sistemi aktif!');
         }
 
-        function patchFinishedLoading(patch) {
+        function patchFinishedLoading(patch)
+        {
+            // Canvas'ı tam ekran yap
             resizeCanvas();
-            addLog('✅ Patch loading finished!', 'success');
-            addLog('🎹 Piano mesajları bekleniyor...', 'log');
+            
+            console.log('🎨 Fluid yüklendi, piano mesajları bekleniyor...');
         }
 
+        // Canvas tam ekran
         function resizeCanvas() {
             const canvas = document.getElementById('glcanvas');
             canvas.width = window.innerWidth;
@@ -193,7 +85,7 @@
             canvas.style.position = 'fixed';
             canvas.style.top = '0';
             canvas.style.left = '0';
-            addLog(`📐 Canvas: ${canvas.width}x${canvas.height}`, 'log');
+            console.log('📐 Canvas:', canvas.width, 'x', canvas.height);
         }
 
         window.addEventListener('resize', resizeCanvas);
@@ -201,9 +93,10 @@
             resizeCanvas();
             setTimeout(resizeCanvas, 100);
             setTimeout(resizeCanvas, 500);
+            setTimeout(resizeCanvas, 1000);
         });
 
-        // 🎹 PİYANODAN MESAJ ALICI
+        // 🎹 PİYANODAN MESAJ ALICI - DÜZELTİLMİŞ
         window.addEventListener('message', (event) => {
             if (event.data.type === 'pianoKeyPress') {
                 const colors = event.data.colors;
@@ -212,89 +105,67 @@
                 const y = event.data.y || window.innerHeight / 2;
                 
                 if (!colors || colors.length === 0) {
-                    addLog(`⚠️ ${key}: Renk paleti boş!`, 'warn');
+                    console.warn('⚠️ Renk paleti boş!');
                     return;
                 }
                 
+                // İlk rengi kullan
                 const color = colors[0];
-                addLog(`🎨 ${key.toUpperCase()} → rgb(${color.r},${color.g},${color.b})`, 'success');
                 
+                console.log('🎨', key.toUpperCase(), '→', `rgb(${color.r},${color.g},${color.b})`);
+                
+                // Cables variable'larını güncelle (0-1 aralığına normalize et)
                 if (fluidPatch) {
-                    // TÜM OLASI VAR İSİMLERİNİ DENE
-                    const variantSets = [
-                        // Set 1: pianoColorR/G/B
-                        () => {
-                            fluidPatch.setVariable('pianoColorR', color.r / 255);
-                            fluidPatch.setVariable('pianoColorG', color.g / 255);
-                            fluidPatch.setVariable('pianoColorB', color.b / 255);
-                        },
-                        // Set 2: colorR/G/B
-                        () => {
-                            fluidPatch.setVariable('colorR', color.r / 255);
-                            fluidPatch.setVariable('colorG', color.g / 255);
-                            fluidPatch.setVariable('colorB', color.b / 255);
-                        },
-                        // Set 3: r/g/b
-                        () => {
-                            fluidPatch.setVariable('r', color.r / 255);
-                            fluidPatch.setVariable('g', color.g / 255);
-                            fluidPatch.setVariable('b', color.b / 255);
-                        },
-                        // Set 4: red/green/blue
-                        () => {
-                            fluidPatch.setVariable('red', color.r / 255);
-                            fluidPatch.setVariable('green', color.g / 255);
-                            fluidPatch.setVariable('blue', color.b / 255);
+                    try {
+                        // Renkleri ayarla
+                        fluidPatch.setVariable('pianoColorR', color.r / 255);
+                        fluidPatch.setVariable('pianoColorG', color.g / 255);
+                        fluidPatch.setVariable('pianoColorB', color.b / 255);
+                        
+                        // Mouse pozisyonunu ayarla (0-1 normalize)
+                        const normalizedX = x / window.innerWidth;
+                        const normalizedY = y / window.innerHeight;
+                        
+                        fluidPatch.setVariable('MousePosX', normalizedX);
+                        fluidPatch.setVariable('MousePosY', normalizedY);
+                        
+                        // Mouse drag simüle et
+                        fluidPatch.setVariable('MouseIsDragged', 1);
+                        fluidPatch.setVariable('mouseButtonDown', 1);
+                        
+                        // 🔥 Eğer mesajdan force/radius geliyorsa onları da ayarla
+                        if (event.data.force) {
+                            fluidPatch.setVariable('splatForce', event.data.force);
                         }
-                    ];
-
-                    // Her set'i dene
-                    variantSets.forEach((setFunc, index) => {
-                        try {
-                            setFunc();
-                            addLog(`   ✓ Set ${index + 1} uygulandı`, 'success');
-                        } catch (e) {
-                            // Hata varsa sessizce devam et
+                        if (event.data.radius) {
+                            fluidPatch.setVariable('splatRadius', event.data.radius);
                         }
-                    });
-                    
-                    // Mouse pozisyonu için de tüm varyasyonları dene
-                    const normalizedX = x / window.innerWidth;
-                    const normalizedY = y / window.innerHeight;
-                    
-                    try { fluidPatch.setVariable('MousePosX', normalizedX); } catch(e) {}
-                    try { fluidPatch.setVariable('MousePosY', normalizedY); } catch(e) {}
-                    try { fluidPatch.setVariable('mouseX', normalizedX); } catch(e) {}
-                    try { fluidPatch.setVariable('mouseY', normalizedY); } catch(e) {}
-                    try { fluidPatch.setVariable('posX', normalizedX); } catch(e) {}
-                    try { fluidPatch.setVariable('posY', normalizedY); } catch(e) {}
-                    
-                    try { fluidPatch.setVariable('MouseIsDragged', 1); } catch(e) {}
-                    try { fluidPatch.setVariable('mouseButtonDown', 1); } catch(e) {}
-                    try { fluidPatch.setVariable('isDragging', 1); } catch(e) {}
-                    try { fluidPatch.setVariable('isMouseDown', 1); } catch(e) {}
-                    
-                    addLog('✅ Tüm variable kombinasyonları denendi!', 'success');
-                    
-                    // Spiral efekt
-                    createSpiralEffect(normalizedX, normalizedY);
-                    
-                    // Mouse up
-                    setTimeout(() => {
-                        if (fluidPatch) {
-                            try { fluidPatch.setVariable('MouseIsDragged', 0); } catch(e) {}
-                            try { fluidPatch.setVariable('mouseButtonDown', 0); } catch(e) {}
-                            try { fluidPatch.setVariable('isDragging', 0); } catch(e) {}
-                            try { fluidPatch.setVariable('isMouseDown', 0); } catch(e) {}
+                        if (event.data.intensity) {
+                            fluidPatch.setVariable('colorIntensity', event.data.intensity);
                         }
-                    }, 300);
+                        
+                        console.log('✅ Fluid variables güncellendi!');
+                        
+                        // Spiral hareket
+                        createSpiralEffect(normalizedX, normalizedY);
+                        
+                        // Mouse up
+                        setTimeout(() => {
+                            if (fluidPatch) {
+                                fluidPatch.setVariable('MouseIsDragged', 0);
+                                fluidPatch.setVariable('mouseButtonDown', 0);
+                            }
+                        }, 300);
+                    } catch (error) {
+                        console.error('❌ Variable set hatası:', error);
+                    }
                 } else {
-                    addLog('❌ fluidPatch bulunamadı!', 'error');
+                    console.error('❌ fluidPatch bulunamadı!');
                 }
             }
         });
 
-        // Spiral efekt
+        // Spiral efekt oluştur
         function createSpiralEffect(startX, startY) {
             let angle = 0;
             let radius = 0;
@@ -309,12 +180,12 @@
                 const y = startY + Math.sin(angle) * radius;
                 
                 if (fluidPatch) {
-                    try { fluidPatch.setVariable('MousePosX', Math.max(0, Math.min(1, x))); } catch(e) {}
-                    try { fluidPatch.setVariable('MousePosY', Math.max(0, Math.min(1, y))); } catch(e) {}
-                    try { fluidPatch.setVariable('mouseX', Math.max(0, Math.min(1, x))); } catch(e) {}
-                    try { fluidPatch.setVariable('mouseY', Math.max(0, Math.min(1, y))); } catch(e) {}
-                    try { fluidPatch.setVariable('posX', Math.max(0, Math.min(1, x))); } catch(e) {}
-                    try { fluidPatch.setVariable('posY', Math.max(0, Math.min(1, y))); } catch(e) {}
+                    try {
+                        fluidPatch.setVariable('MousePosX', Math.max(0, Math.min(1, x)));
+                        fluidPatch.setVariable('MousePosY', Math.max(0, Math.min(1, y)));
+                    } catch (error) {
+                        // Ignore
+                    }
                 }
                 
                 step++;
@@ -324,48 +195,8 @@
             }, 30);
         }
 
-        // 🧪 TEST FONKSİYONLARI
-        function testColor(colorName) {
-            addLog(`🧪 TEST: ${colorName} rengi deneniyor...`, 'warn');
-            
-            let r = 0, g = 0, b = 0;
-            if (colorName === 'red') { r = 1; }
-            if (colorName === 'green') { g = 1; }
-            if (colorName === 'blue') { b = 1; }
-            
-            if (fluidPatch) {
-                try {
-                    fluidPatch.setVariable('pianoColorR', r);
-                    fluidPatch.setVariable('pianoColorG', g);
-                    fluidPatch.setVariable('pianoColorB', b);
-                    fluidPatch.setVariable('MouseIsDragged', 1);
-                    addLog(`✅ ${colorName} ayarlandı!`, 'success');
-                    
-                    setTimeout(() => {
-                        fluidPatch.setVariable('MouseIsDragged', 0);
-                    }, 500);
-                } catch (e) {
-                    addLog(`❌ Hata: ${e.message}`, 'error');
-                }
-            } else {
-                addLog('❌ Patch henüz yüklenmedi!', 'error');
-            }
-        }
-
-        function listVariables() {
-            addLog('📋 Patch variable'ları listeleniyor...', 'warn');
-            if (fluidPatch && fluidPatch.vars) {
-                Object.keys(fluidPatch.vars).forEach(varName => {
-                    addLog(`   • ${varName} = ${fluidPatch.vars[varName]}`, 'log');
-                });
-            } else {
-                addLog('❌ Variable'lar bulunamadı', 'error');
-            }
-        }
-
-        document.addEventListener("CABLES.jsLoaded", function (event) {
-            addLog('📦 CABLES.js yüklendi', 'success');
-            
+        document.addEventListener("CABLES.jsLoaded", function (event)
+        {
             CABLES.patch = new CABLES.Patch({
                 patch: CABLES.exportedPatch,
                 "prefixAssetPath": "",
@@ -376,14 +207,14 @@
                 "onError": showError,
                 "onPatchLoaded": patchInitialized,
                 "onFinishedLoading": patchFinishedLoading,
-                "canvas": {"alpha":true, "premultipliedAlpha":true }
+                "canvas": {"alpha":true, "premultipliedAlpha":true } // make canvas transparent
             });
         });
 
-        // Rubberband effect disable
+        // disable rubberband effect on mobile devices
         document.getElementById('glcanvas').addEventListener('touchmove', (e)=>{ e.preventDefault(); }, false);
-
-        addLog('🚀 Sistem başlatıldı', 'success');
+        
+        console.log('🎹 Piano mesaj dinleyicisi aktif!');
     </script>
 </body>
 </html>
