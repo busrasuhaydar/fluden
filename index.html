@@ -144,55 +144,78 @@
             }
         });
 
-        // Mouse drag simülasyonu - ORİJİNAL GİBİ
+        // Mouse drag simülasyonu - GERÇEK MOUSE EVENTS
         function startMouseDrag(startX, startY, color) {
             if (!fluidPatch) return;
             
-            // Başlangıç
-            fluidPatch.setVariable('MousePosX', startX);
-            fluidPatch.setVariable('MousePosY', startY);
-            fluidPatch.setVariable('mouseButtonDown', 1);
-            fluidPatch.setVariable('MouseIsDragged', 1);
+            const canvas = document.getElementById('glcanvas');
+            if (!canvas) return;
             
-            // Drag pozisyonları
-            fluidPatch.setVariable('MouseDragX', startX);
-            fluidPatch.setVariable('MouseDragY', startY);
+            const pixelX = startX * window.innerWidth;
+            const pixelY = startY * window.innerHeight;
             
-            console.log('🖱️ Mouse drag:', startX.toFixed(2), startY.toFixed(2));
+            console.log('🖱️ Mouse event:', Math.round(pixelX), Math.round(pixelY));
             
-            // Spiral hareket
+            // SplatColor set et
+            try {
+                fluidPatch.setVariable('SplatColor', color);
+            } catch(e) {}
+            
+            // Mouse down event
+            const mouseDown = new MouseEvent('mousedown', {
+                clientX: pixelX,
+                clientY: pixelY,
+                button: 0,
+                buttons: 1,
+                bubbles: true
+            });
+            canvas.dispatchEvent(mouseDown);
+            
+            // Spiral mouse move
             let angle = 0;
             let radius = 0;
             let step = 0;
-            const maxSteps = 35;
+            const maxSteps = 40;
             
             const dragInterval = setInterval(() => {
-                angle += 0.7;
-                radius += 0.018;
+                angle += 0.8;
+                radius += 5;
                 
-                const newX = Math.max(0, Math.min(1, startX + Math.cos(angle) * radius));
-                const newY = Math.max(0, Math.min(1, startY + Math.sin(angle) * radius));
+                const newX = pixelX + Math.cos(angle) * radius;
+                const newY = pixelY + Math.sin(angle) * radius;
                 
-                if (fluidPatch) {
-                    fluidPatch.setVariable('MousePosX', newX);
-                    fluidPatch.setVariable('MousePosY', newY);
-                    fluidPatch.setVariable('MouseDragX', newX);
-                    fluidPatch.setVariable('MouseDragY', newY);
+                // Mouse move event
+                const mouseMove = new MouseEvent('mousemove', {
+                    clientX: newX,
+                    clientY: newY,
+                    button: 0,
+                    buttons: 1,
+                    bubbles: true
+                });
+                canvas.dispatchEvent(mouseMove);
+                
+                // Rengi güncelle
+                try {
                     fluidPatch.setVariable('SplatColor', color);
-                    fluidPatch.setVariable('MouseIsDragged', 1);
-                }
+                } catch(e) {}
                 
                 step++;
                 if (step >= maxSteps) {
                     clearInterval(dragInterval);
                     
-                    // Drag bitir
-                    if (fluidPatch) {
-                        fluidPatch.setVariable('mouseButtonDown', 0);
-                        fluidPatch.setVariable('MouseIsDragged', 0);
-                    }
+                    // Mouse up event
+                    const mouseUp = new MouseEvent('mouseup', {
+                        clientX: newX,
+                        clientY: newY,
+                        button: 0,
+                        buttons: 0,
+                        bubbles: true
+                    });
+                    canvas.dispatchEvent(mouseUp);
+                    
+                    console.log('✅ Drag bitti');
                 }
-            }, 18);
+            }, 16);
         }
 
         document.addEventListener("CABLES.jsLoaded", function (event)
