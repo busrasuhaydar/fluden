@@ -1,50 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Piano Fluid - PNG COLOR VERSION</title>
+    <title>Piano Fluid - FINAL</title>
     <style>
-        * {
+        body {
             margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html, body {
-            width: 100vw !important;
-            height: 100vh !important;
             background-color: #000;
+            color: #fff;
+            font-family: Helvetica, Arial, sans-serif;
             overflow: hidden;
-            position: fixed;
-            top: 0;
-            left: 0;
+            height:100vh;
         }
 
         canvas {
             display: block;
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100vw !important;
-            height: 100vh !important;
-            outline: 0;
-            z-index: 1;
-        }
-
-        div:not(#root), span, p, h1, h2, h3, h4, h5, h6, a, label, button,
-        [class*="fps"], [class*="cpu"], [class*="gpu"], [class*="info"],
-        [class*="cables"], [id*="stats"], [id*="info"] {
-            display: none !important;
-            visibility: hidden !important;
-            opacity: 0 !important;
-            pointer-events: none !important;
+            position: absolute;
+            outline:0;
         }
 
         * {
             -webkit-tap-highlight-color: transparent;
             -webkit-touch-callout: none;
             -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
             user-select: none;
         }
+
     </style>
 
     <meta charset="utf-8">
@@ -57,339 +39,108 @@
 
     <script type="text/javascript">
 
-        let patchReady = false;
-        let currentSplatColor = [1, 1, 1]; // Default beyaz
-
         function showError(initiator,...args) {
             // Silent
         }
 
         function patchInitialized(patch) {
-            patchReady = true;
-            console.log('✅ Cables patch hazır!');
-            
-            forceFullscreen();
-            hideAllText();
-            setInterval(hideAllText, 100);
-            
-            // Renk injection için ops'ları bul
-            setTimeout(findAndInjectColor, 500);
+            console.log('✅ Fluid hazır!');
         }
-
-        function forceFullscreen() {
-            const canvas = document.getElementById('glcanvas');
-            if (!canvas) return;
-            
-            const w = window.innerWidth;
-            const h = window.innerHeight;
-            
-            canvas.width = w;
-            canvas.height = h;
-            canvas.style.cssText = `
-                position: fixed !important;
-                top: 0 !important;
-                left: 0 !important;
-                width: ${w}px !important;
-                height: ${h}px !important;
-                display: block !important;
-                z-index: 1 !important;
-            `;
-            
-            document.body.style.cssText = `
-                width: 100vw !important;
-                height: 100vh !important;
-                overflow: hidden !important;
-                position: fixed !important;
-                top: 0 !important;
-                left: 0 !important;
-            `;
-        }
-
-        function hideAllText() {
-            document.querySelectorAll('div, span, p, h1, h2, h3, h4, h5, h6, a, label, button').forEach(el => {
-                if (el.id !== 'root' && el.tagName.toLowerCase() !== 'canvas') {
-                    el.style.display = 'none';
-                    el.style.visibility = 'hidden';
-                    el.style.opacity = '0';
-                }
-            });
-        }
-
-        window.addEventListener('resize', forceFullscreen);
-        window.addEventListener('load', () => {
-            forceFullscreen();
-            hideAllText();
-            setTimeout(forceFullscreen, 100);
-            setTimeout(forceFullscreen, 500);
-        });
 
         function patchFinishedLoading(patch) {
-            console.log('🎨 Fluid yüklendi!');
+            console.log('🎨 Yükleme tamamlandı!');
         }
 
-        // 🎨 CABLES OPS'LARINA RENK INJECT ET
-        function findAndInjectColor() {
-            if (typeof CABLES === 'undefined' || !CABLES.patch) {
-                console.warn('⚠️ CABLES patch bulunamadı');
-                return;
-            }
-
-            console.log('🔍 Renk injection sistemi başlatılıyor...');
-
-            // Tüm ops'ları tara
-            const ops = CABLES.patch.ops;
-            let colorOpsFound = 0;
-
-            for (let i = 0; i < ops.length; i++) {
-                const op = ops[i];
-                
-                // Renk ile ilgili ops'ları bul
-                if (op.objName && (
-                    op.objName.includes('Color') ||
-                    op.objName.includes('RGB') ||
-                    op.objName.includes('Splat') ||
-                    op.objName.includes('Fluid')
-                )) {
-                    console.log('🎨 Bulundu:', op.objName);
-                    
-                    // Op'un port'larını tara
-                    const inPorts = op.portsIn;
-                    for (let j = 0; j < inPorts.length; j++) {
-                        const port = inPorts[j];
-                        if (port.name && (
-                            port.name.toLowerCase().includes('color') ||
-                            port.name.toLowerCase().includes('r') ||
-                            port.name.toLowerCase().includes('g') ||
-                            port.name.toLowerCase().includes('b')
-                        )) {
-                            console.log('  🔌 Port:', port.name, '=', port.get());
-                            
-                            // Bu port'u override et
-                            const originalOnChange = port.onChange;
-                            port.onChange = function() {
-                                // PNG rengini kullan
-                                if (port.name.toLowerCase().includes('r')) {
-                                    port.set(currentSplatColor[0]);
-                                } else if (port.name.toLowerCase().includes('g')) {
-                                    port.set(currentSplatColor[1]);
-                                } else if (port.name.toLowerCase().includes('b')) {
-                                    port.set(currentSplatColor[2]);
-                                } else if (port.name.toLowerCase().includes('color')) {
-                                    port.set(currentSplatColor);
-                                }
-                                
-                                if (originalOnChange) {
-                                    originalOnChange.call(port);
-                                }
-                            };
-                            
-                            colorOpsFound++;
-                        }
-                    }
-                }
-            }
-
-            if (colorOpsFound > 0) {
-                console.log('✅ Renk injection aktif! (' + colorOpsFound + ' port bulundu)');
-            } else {
-                console.warn('⚠️ Hiç renk port\'u bulunamadı, alternatif yöntem deneniyor...');
-                tryAlternativeColorInjection();
-            }
-        }
-
-        // Alternatif: Canvas context'i intercept et
-        function tryAlternativeColorInjection() {
-            const canvas = document.getElementById('glcanvas');
-            if (!canvas) return;
-
-            const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
-            if (!gl) return;
-
-            console.log('🎨 WebGL context bulundu, uniform injection deneniyor...');
-
-            // uniform4f ve uniform3f'i intercept et
-            const originalUniform4f = gl.uniform4f;
-            const originalUniform3f = gl.uniform3f;
-
-            gl.uniform4f = function(location, x, y, z, w) {
-                // Renk benzeri uniform'ları değiştir
-                if (location && location.name && location.name.toLowerCase().includes('color')) {
-                    console.log('🎨 Uniform4f renk yakalandı:', x, y, z, w);
-                    return originalUniform4f.call(this, location, 
-                        currentSplatColor[0], 
-                        currentSplatColor[1], 
-                        currentSplatColor[2], 
-                        w || 1.0
-                    );
-                }
-                return originalUniform4f.call(this, location, x, y, z, w);
-            };
-
-            gl.uniform3f = function(location, x, y, z) {
-                if (location && location.name && location.name.toLowerCase().includes('color')) {
-                    console.log('🎨 Uniform3f renk yakalandı:', x, y, z);
-                    return originalUniform3f.call(this, location,
-                        currentSplatColor[0],
-                        currentSplatColor[1],
-                        currentSplatColor[2]
-                    );
-                }
-                return originalUniform3f.call(this, location, x, y, z);
-            };
-
-            console.log('✅ WebGL uniform injection aktif!');
-        }
-
-        // 🎹 PIANO MESSAGE LISTENER - PNG RENKLERİYLE
+        // 🎹 PİYANO MESAJ SİSTEMİ
         window.addEventListener('message', (event) => {
-            if (event.data && event.data.type === 'pianoKeyPress') {
-                const key = event.data.key || 'unknown';
+            if (event.data.type === 'pianoKeyPress') {
                 const colors = event.data.colors || [];
+                const key = event.data.key;
                 const x = event.data.x || window.innerWidth / 2;
                 const y = event.data.y || window.innerHeight / 2;
                 
-                if (colors.length === 0) {
-                    console.warn('⚠️ Renk bulunamadı!');
-                    return;
-                }
+                if (colors.length === 0) return;
                 
-                console.log('🎹 Mesaj alındı:', key.toUpperCase(), '->', colors.length, 'renk');
+                const color = colors[0];
+                console.log('🎹', key.toUpperCase(), '→', `rgb(${color.r},${color.g},${color.b})`);
                 
-                // ANA RENK - Merkez spiral
-                applyPianoColor(colors[0]);
-                simulatePianoInput(x, y);
+                // PNG rengini Cables'e gönder
+                setPianoColor(color);
                 
-                // EK RENKLER - Çevrede patlamalar
-                const extraColors = colors.slice(1, 6);
-                extraColors.forEach((color, i) => {
-                    setTimeout(() => {
-                        const angle = (i / extraColors.length) * Math.PI * 2;
-                        const dist = 60 + Math.random() * 40;
-                        const newX = x + Math.cos(angle) * dist;
-                        const newY = y + Math.sin(angle) * dist;
-                        
-                        applyPianoColor(color);
-                        simulatePianoInput(newX, newY);
-                    }, (i + 1) * 100);
-                });
+                // Mouse simülasyonu
+                createPianoSpiral(x, y);
             }
-        }, false);
+        });
 
-        // PNG rengini Cables'e uygula
-        function applyPianoColor(color) {
-            if (!color) return;
-
-            // Renk normalize - daha yumuşak
-            let r = color.r;
-            let g = color.g;
-            let b = color.b;
+        // PNG rengini Cables SplatColor'a set et
+        function setPianoColor(color) {
+            if (typeof CABLES === 'undefined' || !CABLES.patch) return;
             
-            // Brightness normalize
-            const brightness = (r + g + b) / 3;
-            if (brightness < 60) {
-                const factor = 60 / Math.max(brightness, 1);
-                r = Math.min(255, r * factor);
-                g = Math.min(255, g * factor);
-                b = Math.min(255, b * factor);
-            }
-            
-            // Saturation boost
-            const avg = (r + g + b) / 3;
-            const boost = 1.4;
-            
-            r = Math.min(255, Math.max(0, avg + (r - avg) * boost));
-            g = Math.min(255, Math.max(0, avg + (g - avg) * boost));
-            b = Math.min(255, Math.max(0, avg + (b - avg) * boost));
-
-            // Global renk değişkenini güncelle
-            currentSplatColor = [
-                r / 255,
-                g / 255,
-                b / 255
-            ];
-
-            console.log('🎨 Renk ayarlandı:', Math.round(r), Math.round(g), Math.round(b));
-
-            // Cables ops'larını güncelle
-            if (typeof CABLES !== 'undefined' && CABLES.patch) {
-                const ops = CABLES.patch.ops;
-                for (let i = 0; i < ops.length; i++) {
-                    const op = ops[i];
-                    if (op.objName && op.objName.includes('Color')) {
-                        const inPorts = op.portsIn;
-                        for (let j = 0; j < inPorts.length; j++) {
-                            const port = inPorts[j];
-                            if (port.name && port.name.toLowerCase().includes('color')) {
-                                try {
-                                    port.set(currentSplatColor);
-                                } catch(e) {}
-                            }
-                        }
-                    }
-                }
+            try {
+                const normalizedColor = [
+                    color.r / 255,
+                    color.g / 255,
+                    color.b / 255
+                ];
+                CABLES.patch.setVariable('SplatColor', normalizedColor);
+                console.log('✅ Renk set:', normalizedColor.map(v => v.toFixed(2)));
+            } catch(e) {
+                console.warn('Renk set hatası');
             }
         }
 
-        // Mouse simülasyonu - SPIRAL
-        function simulatePianoInput(startX, startY) {
+        // Spiral mouse hareketi
+        function createPianoSpiral(startX, startY) {
             const canvas = document.getElementById('glcanvas');
-            if (!canvas) {
-                console.warn('⚠️ Canvas bulunamadı!');
-                return;
-            }
-
+            if (!canvas) return;
+            
             // Mouse down
             canvas.dispatchEvent(new MouseEvent('mousedown', {
                 clientX: startX,
                 clientY: startY,
                 button: 0,
                 buttons: 1,
-                bubbles: true,
-                cancelable: true
+                bubbles: true
             }));
-
-            // Spiral hareket
+            
             let angle = 0;
             let radius = 0;
             let step = 0;
-            const maxSteps = 35;
-
-            const spiralInterval = setInterval(() => {
-                angle += 0.65;
-                radius += 3.5;
-
+            const maxSteps = 30;
+            
+            const interval = setInterval(() => {
+                angle += 0.6;
+                radius += 3;
+                
                 const x = startX + Math.cos(angle) * radius;
                 const y = startY + Math.sin(angle) * radius;
-
+                
+                // Mouse move
                 canvas.dispatchEvent(new MouseEvent('mousemove', {
                     clientX: x,
                     clientY: y,
                     button: 0,
                     buttons: 1,
-                    bubbles: true,
-                    cancelable: true
+                    bubbles: true
                 }));
-
+                
                 step++;
-                if (step >= maxSteps || radius > 200) {
-                    clearInterval(spiralInterval);
-
+                if (step >= maxSteps) {
+                    clearInterval(interval);
+                    
+                    // Mouse up
                     canvas.dispatchEvent(new MouseEvent('mouseup', {
                         clientX: x,
                         clientY: y,
                         button: 0,
                         buttons: 0,
-                        bubbles: true,
-                        cancelable: true
+                        bubbles: true
                     }));
-
-                    console.log('✅ Spiral tamamlandı');
                 }
             }, 16);
         }
 
         document.addEventListener("CABLES.jsLoaded", function (event) {
-            console.log('📦 CABLES.js yüklendi');
             CABLES.patch = new CABLES.Patch({
                 patch: CABLES.exportedPatch,
                 "prefixAssetPath": "",
@@ -405,19 +156,6 @@
         });
 
         document.getElementById('glcanvas').addEventListener('touchmove', (e)=>{ e.preventDefault(); }, false);
-
-        // TEST
-        window.testFluid = function(r, g, b) {
-            console.log('🧪 Test renk:', r || 255, g || 100, b || 180);
-            applyPianoColor({ r: r || 255, g: g || 100, b: b || 180 });
-            simulatePianoInput(window.innerWidth / 2, window.innerHeight / 2);
-        };
-
-        // 5 saniye sonra test
-        setTimeout(() => {
-            console.log('🧪 Otomatik test: Pembe renk');
-            window.testFluid(255, 100, 180);
-        }, 5000);
     </script>
 </body>
 </html>
