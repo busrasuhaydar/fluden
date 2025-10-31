@@ -30,14 +30,24 @@
             z-index: 1;
         }
 
-        /* HİÇBİR YAZI GÖRÜNMESIN */
-        div:not(#root), span, p, h1, h2, h3, h4, h5, h6, a, label, button,
+        /* HİÇBİR YAZI GÖRÜNMESIN - ULTRA AGRESIF */
+        div:not(#root):not(#glcanvas), 
+        span, p, h1, h2, h3, h4, h5, h6, a, label, button, strong, em,
         [class*="fps"], [class*="cpu"], [class*="gpu"], [class*="info"],
-        [class*="cables"], [id*="stats"], [id*="info"] {
+        [class*="stats"], [class*="debug"], [class*="performance"],
+        [class*="cables"], [id*="stats"], [id*="info"], [id*="fps"],
+        [id*="debug"], [id*="performance"], [data-*="stats"] {
             display: none !important;
             visibility: hidden !important;
             opacity: 0 !important;
             pointer-events: none !important;
+            position: absolute !important;
+            left: -9999px !important;
+            top: -9999px !important;
+            width: 0 !important;
+            height: 0 !important;
+            overflow: hidden !important;
+            z-index: -9999 !important;
         }
 
         * {
@@ -92,19 +102,46 @@
             const canvas = document.getElementById('glcanvas');
             if (!canvas) return;
             
+            // Gerçek window boyutları
             const w = window.innerWidth;
             const h = window.innerHeight;
             
-            canvas.width = w;
-            canvas.height = h;
+            // Canvas pixel boyutları - RETINA desteği
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = w * dpr;
+            canvas.height = h * dpr;
+            
+            // Canvas CSS boyutları - TAM EKRAN GARANTİSİ
             canvas.style.cssText = `
                 position: fixed !important;
                 top: 0 !important;
                 left: 0 !important;
-                width: ${w}px !important;
-                height: ${h}px !important;
+                right: 0 !important;
+                bottom: 0 !important;
+                width: 100vw !important;
+                height: 100vh !important;
+                max-width: 100vw !important;
+                max-height: 100vh !important;
+                min-width: 100vw !important;
+                min-height: 100vh !important;
                 display: block !important;
                 z-index: 1 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                border: 0 !important;
+                outline: 0 !important;
+            `;
+            
+            // HTML ve BODY - TAM EKRAN GARANTİSİ
+            document.documentElement.style.cssText = `
+                width: 100vw !important;
+                height: 100vh !important;
+                overflow: hidden !important;
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
             `;
             
             document.body.style.cssText = `
@@ -114,16 +151,45 @@
                 position: fixed !important;
                 top: 0 !important;
                 left: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
             `;
+            
+            console.log('🖼️ TAM EKRAN:', w, 'x', h, '(DPR:', dpr + ')');
         }
 
         function hideAllText() {
-            // TÜM text elementlerini gizle
-            document.querySelectorAll('div, span, p, h1, h2, h3, h4, h5, h6, a, label, button').forEach(el => {
-                if (el.id !== 'root' && el.tagName.toLowerCase() !== 'canvas') {
-                    el.style.display = 'none';
-                    el.style.visibility = 'hidden';
-                    el.style.opacity = '0';
+            // TÜM text elementlerini gizle - ULTRA AGRESIF
+            const selectors = [
+                'div', 'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 
+                'a', 'label', 'button', 'strong', 'em', 'b', 'i', 'u',
+                'small', 'pre', 'code', 'blockquote', 'ul', 'ol', 'li',
+                'table', 'tr', 'td', 'th', 'caption', 'dl', 'dt', 'dd',
+                'article', 'section', 'nav', 'aside', 'header', 'footer',
+                'figure', 'figcaption', 'time', 'mark', 'q', 'cite', 'abbr',
+                '[class*="fps"]', '[class*="cpu"]', '[class*="gpu"]', 
+                '[class*="info"]', '[class*="stats"]', '[class*="debug"]',
+                '[class*="cables"]', '[class*="text"]', '[class*="label"]',
+                '[id*="stats"]', '[id*="info"]', '[id*="fps"]', '[id*="debug"]'
+            ];
+            
+            document.querySelectorAll(selectors.join(', ')).forEach(el => {
+                // Canvas ve root hariç HERŞEYİ gizle
+                if (el.id !== 'root' && 
+                    el.id !== 'glcanvas' && 
+                    el.tagName.toLowerCase() !== 'canvas' &&
+                    !el.closest('canvas')) {
+                    el.style.cssText = `
+                        display: none !important;
+                        visibility: hidden !important;
+                        opacity: 0 !important;
+                        pointer-events: none !important;
+                        position: absolute !important;
+                        left: -9999px !important;
+                        width: 0 !important;
+                        height: 0 !important;
+                        overflow: hidden !important;
+                    `;
                 }
             });
         }
@@ -174,37 +240,98 @@
             }
         });
 
-        // PNG rengini Cables'e gönder - TÜM YÖNTEMLER + ULTRA BELİRGİN
+        // PNG rengini Cables'e gönder - ULTRA BELİRGİN DOMINANT COLORS 🎨
         function applyPianoColor(color) {
             if (!patchReady || typeof CABLES === 'undefined' || !CABLES.patch) {
                 return;
             }
 
-            // RENK BELİRGİNLEŞTİRME - AGGRESSIVE
             let r = color.r;
             let g = color.g;
             let b = color.b;
             
-            // 1. Brightness normalize
+            // ═══════════════════════════════════════════════════
+            // 1. DOMINANT COLOR EXTRACTION - En belirgin kanalı bul ve PATLATMALI
+            // ═══════════════════════════════════════════════════
+            const maxChannel = Math.max(r, g, b);
+            const minChannel = Math.min(r, g, b);
+            const saturation = maxChannel === 0 ? 0 : (maxChannel - minChannel) / maxChannel;
+            
+            // Eğer renk soluksa (düşük saturation), dominant kanalı ULTRA BOOST
+            if (saturation < 0.5) {
+                if (r === maxChannel) {
+                    r = Math.min(255, r * 2.8);  // Kırmızı dominant
+                    g = Math.max(0, g * 0.3);
+                    b = Math.max(0, b * 0.3);
+                } else if (g === maxChannel) {
+                    g = Math.min(255, g * 2.8);  // Yeşil dominant
+                    r = Math.max(0, r * 0.3);
+                    b = Math.max(0, b * 0.3);
+                } else {
+                    b = Math.min(255, b * 2.8);  // Mavi dominant
+                    r = Math.max(0, r * 0.3);
+                    g = Math.max(0, g * 0.3);
+                }
+            } else {
+                // Zaten doygun renkler için daha hafif boost
+                if (r === maxChannel) {
+                    r = Math.min(255, r * 1.4);
+                } else if (g === maxChannel) {
+                    g = Math.min(255, g * 1.4);
+                } else {
+                    b = Math.min(255, b * 1.4);
+                }
+            }
+            
+            // ═══════════════════════════════════════════════════
+            // 2. BRIGHTNESS BOOST - Minimum 150 parlaklık garantisi
+            // ═══════════════════════════════════════════════════
             const brightness = (r + g + b) / 3;
-            if (brightness < 100) {
-                // Koyu renkleri aydınlat
-                const factor = 100 / brightness;
+            if (brightness < 150) {
+                const factor = 150 / Math.max(brightness, 1);
                 r = Math.min(255, r * factor);
                 g = Math.min(255, g * factor);
                 b = Math.min(255, b * factor);
             }
             
-            // 2. Saturation boost - ULTRA
-            const max = Math.max(r, g, b);
-            const min = Math.min(r, g, b);
+            // ═══════════════════════════════════════════════════
+            // 3. SATURATION MEGA BOOST - Renkleri daha canlı yap
+            // ═══════════════════════════════════════════════════
+            const newMax = Math.max(r, g, b);
             const avg = (r + g + b) / 3;
             
-            if (max > 0) {
-                const boost = 1.6; // Daha agresif
-                r = Math.min(255, Math.max(0, avg + (r - avg) * boost));
-                g = Math.min(255, Math.max(0, avg + (g - avg) * boost));
-                b = Math.min(255, Math.max(0, avg + (b - avg) * boost));
+            if (newMax > 0) {
+                const boostFactor = 3.2; // ÇOK AGRESIF BOOST
+                r = Math.min(255, Math.max(0, avg + (r - avg) * boostFactor));
+                g = Math.min(255, Math.max(0, avg + (g - avg) * boostFactor));
+                b = Math.min(255, Math.max(0, avg + (b - avg) * boostFactor));
+            }
+            
+            // ═══════════════════════════════════════════════════
+            // 4. CONTRAST ULTRA BOOST - Siyah/beyaz ayrımını artır
+            // ═══════════════════════════════════════════════════
+            const contrastFactor = 1.6;
+            r = Math.min(255, Math.max(0, ((r / 255 - 0.5) * contrastFactor + 0.5) * 255));
+            g = Math.min(255, Math.max(0, ((g / 255 - 0.5) * contrastFactor + 0.5) * 255));
+            b = Math.min(255, Math.max(0, ((b / 255 - 0.5) * contrastFactor + 0.5) * 255));
+            
+            // ═══════════════════════════════════════════════════
+            // 5. GAMMA CORRECTION - Renkleri görsel olarak daha canlı göster
+            // ═══════════════════════════════════════════════════
+            const gamma = 0.75;
+            r = Math.pow(r / 255, gamma) * 255;
+            g = Math.pow(g / 255, gamma) * 255;
+            b = Math.pow(b / 255, gamma) * 255;
+            
+            // ═══════════════════════════════════════════════════
+            // 6. VIBRANCE BOOST - Son rötuş
+            // ═══════════════════════════════════════════════════
+            const finalMax = Math.max(r, g, b);
+            if (finalMax < 200) {
+                const vibranceFactor = 1.3;
+                r = Math.min(255, r * vibranceFactor);
+                g = Math.min(255, g * vibranceFactor);
+                b = Math.min(255, b * vibranceFactor);
             }
 
             const normalizedColor = [
@@ -216,7 +343,7 @@
             // TÜM YÖNTEMLER DENENİYOR
             try {
                 CABLES.patch.setVariable('SplatColor', normalizedColor);
-                console.log('✅ Renk:', Math.round(r), Math.round(g), Math.round(b));
+                console.log('🎨 SÜPER BELİRGİN RENK:', Math.round(r), Math.round(g), Math.round(b));
             } catch(e) {}
 
             try {
