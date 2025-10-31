@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Piano Fluid - FINAL SOLUTION</title>
+    <title>Piano Fluid - ULTRA ENHANCED</title>
     <style>
         * {
             margin: 0;
@@ -13,30 +13,25 @@
             width: 100vw !important;
             height: 100vh !important;
             background-color: #000;
-            overflow: hidden;
-            position: fixed;
-            top: 0;
-            left: 0;
+            overflow: hidden !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
         }
 
         canvas {
-            display: block;
+            display: block !important;
             position: fixed !important;
             top: 0 !important;
             left: 0 !important;
             width: 100vw !important;
             height: 100vh !important;
-            min-width: 100vw !important;
-            min-height: 100vh !important;
-            max-width: 100vw !important;
-            max-height: 100vh !important;
-            outline: 0;
-            z-index: 1;
-            margin: 0 !important;
-            padding: 0 !important;
+            outline: 0 !important;
+            z-index: 1 !important;
+            border: none !important;
         }
 
-        /* HİÇBİR YAZI GÖRÜNMESIN */
+        /* HİÇBİR YAZI GÖRÜNMESİN */
         div:not(#root), span, p, h1, h2, h3, h4, h5, h6, a, label, button,
         [class*="fps"], [class*="cpu"], [class*="gpu"], [class*="info"],
         [class*="cables"], [id*="stats"], [id*="info"] {
@@ -57,10 +52,10 @@
     </style>
 
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1">
 </head>
 <body>
-    <canvas id="glcanvas" width="100vw" height="100vh" tabindex="1"></canvas>
+    <canvas id="glcanvas" tabindex="1"></canvas>
 
     <script type="text/javascript" src="js/patch.js" async></script>
 
@@ -76,14 +71,13 @@
             patchReady = true;
             console.log('✅ Cables patch hazır!');
             
-            // FORCE FULLSCREEN
+            // FORCE FULLSCREEN - ULTRA
             forceFullscreen();
             
-            // HİÇBİR YAZI GÖRÜNMESIN
+            // HİÇBİR YAZI GÖRÜNMESİN
             hideAllText();
-            setInterval(hideAllText, 100); // Her 100ms kontrol et
+            setInterval(hideAllText, 100);
             
-            // Test: SplatColor variable'ı var mı?
             setTimeout(() => {
                 try {
                     const testColor = patch.getVariable('SplatColor');
@@ -101,16 +95,28 @@
             const w = window.innerWidth;
             const h = window.innerHeight;
             
+            // Canvas boyutunu zorla ayarla
             canvas.width = w;
             canvas.height = h;
             canvas.style.cssText = `
                 position: fixed !important;
                 top: 0 !important;
                 left: 0 !important;
-                width: ${w}px !important;
-                height: ${h}px !important;
+                width: 100vw !important;
+                height: 100vh !important;
+                max-width: 100vw !important;
+                max-height: 100vh !important;
                 display: block !important;
                 z-index: 1 !important;
+                border: none !important;
+                outline: none !important;
+            `;
+            
+            document.documentElement.style.cssText = `
+                width: 100vw !important;
+                height: 100vh !important;
+                overflow: hidden !important;
+                position: fixed !important;
             `;
             
             document.body.style.cssText = `
@@ -120,11 +126,12 @@
                 position: fixed !important;
                 top: 0 !important;
                 left: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
             `;
         }
 
         function hideAllText() {
-            // TÜM text elementlerini gizle
             document.querySelectorAll('div, span, p, h1, h2, h3, h4, h5, h6, a, label, button').forEach(el => {
                 if (el.id !== 'root' && el.tagName.toLowerCase() !== 'canvas') {
                     el.style.display = 'none';
@@ -134,38 +141,50 @@
             });
         }
 
-        window.addEventListener('resize', forceFullscreen);
+        window.addEventListener('resize', () => {
+            forceFullscreen();
+            setTimeout(forceFullscreen, 100);
+        });
+        
         window.addEventListener('load', () => {
             forceFullscreen();
             hideAllText();
             setTimeout(forceFullscreen, 100);
             setTimeout(forceFullscreen, 500);
+            setTimeout(forceFullscreen, 1000);
         });
 
         function patchFinishedLoading(patch) {
             console.log('🎨 Fluid yüklendi!');
+            forceFullscreen();
         }
 
-        // 🎹 PİYANO MESAJ SİSTEMİ - ULTRA RENKLI + RANDOM POZİSYON!
+        // 🎹 PİYANO MESAJ SİSTEMİ - ULTRA BELİRGİN RENKLER + RANDOM POZİSYON!
         window.addEventListener('message', (event) => {
             if (event.data.type === 'pianoKeyPress') {
                 const colors = event.data.colors || [];
                 const key = event.data.key;
                 
-                // RANDOM POZİSYON - Her tuş farklı yerde başlıyor!
+                if (colors.length === 0) return;
+                
+                // 🎯 EN BELİRGİN 10 RENGİ ÖNCE AL
+                const vibrantColors = selectMostVibrantColors(colors, 10);
+                // 🎨 DİĞER 10 RENGİ DE AL (parlak, orta, koyu)
+                const remainingColors = colors.slice(10, 20);
+                const finalColors = [...vibrantColors, ...remainingColors];
+                
+                // 🎲 RANDOM POZİSYON - Her tuş farklı yerde başlıyor!
                 const x = Math.random() * window.innerWidth;
                 const y = Math.random() * window.innerHeight;
                 
-                if (colors.length === 0) return;
+                console.log('🎹', key.toUpperCase(), '→', finalColors.length, 'ultra renk! Pozisyon:', Math.round(x), Math.round(y));
                 
-                console.log('🎹', key.toUpperCase(), '→', colors.length, 'renk!');
-                
-                // ANA RENK: Merkez spiral
-                applyPianoColor(colors[0]);
+                // ANA RENK: En belirgin merkez spiral
+                applyPianoColor(finalColors[0]);
                 simulatePianoInput(x, y);
                 
-                // EK RENKLER: Çevrede patlamalar (15 renk)
-                const extraColors = colors.slice(1, 16);
+                // EK RENKLER: Çevrede patlamalar
+                const extraColors = finalColors.slice(1, 8);
                 extraColors.forEach((color, i) => {
                     setTimeout(() => {
                         const angle = (i / extraColors.length) * Math.PI * 2;
@@ -180,38 +199,80 @@
             }
         });
 
-        // PNG rengini Cables'e gönder - TÜM YÖNTEMLER + ULTRA BELİRGİN
+        // 🎨 EN BELİRGİN RENKLERİ SEÇ - ULTRA AKILLI
+        function selectMostVibrantColors(colors, count) {
+            return colors
+                .map(color => {
+                    // Her renk için "canlılık skoru" hesapla
+                    const r = color.r;
+                    const g = color.g;
+                    const b = color.b;
+                    
+                    // 1. Saturation (doygunluk)
+                    const max = Math.max(r, g, b);
+                    const min = Math.min(r, g, b);
+                    const saturation = max === 0 ? 0 : (max - min) / max;
+                    
+                    // 2. Brightness (parlaklık)
+                    const brightness = (r + g + b) / 3;
+                    
+                    // 3. Contrast (kontrast)
+                    const contrast = max - min;
+                    
+                    // 4. Renk farkı (gri olmayan renkler daha yüksek skor)
+                    const colorDiff = Math.abs(r - g) + Math.abs(g - b) + Math.abs(b - r);
+                    
+                    // TOPLAM SKOR: En canlı renkler en yüksek skoru alır
+                    const vibrancyScore = 
+                        (saturation * 3) +          // Saturation en önemli
+                        (brightness / 255 * 2) +    // Parlaklık önemli
+                        (contrast / 255 * 2) +      // Kontrast önemli
+                        (colorDiff / 765 * 2);      // Renk farkı önemli
+                    
+                    return { color, vibrancyScore };
+                })
+                .sort((a, b) => b.vibrancyScore - a.vibrancyScore) // En yüksekten düşüğe
+                .slice(0, count) // İlk 10'u al
+                .map(item => item.color);
+        }
+
+        // PNG rengini Cables'e gönder - ULTRA BELİRGİN + AGRESİF
         function applyPianoColor(color) {
             if (!patchReady || typeof CABLES === 'undefined' || !CABLES.patch) {
                 return;
             }
 
-            // RENK BELİRGİNLEŞTİRME - AGGRESSIVE
+            // RENK BELİRGİNLEŞTİRME - ULTRA AGGRESSIVE
             let r = color.r;
             let g = color.g;
             let b = color.b;
             
-            // 1. Brightness normalize
+            // 1. Brightness normalize - Koyu renkleri güçlendir
             const brightness = (r + g + b) / 3;
-            if (brightness < 130) {
-                // Koyu renkleri aydınlat
-                const factor = 130 / brightness;
+            if (brightness < 120) {
+                const factor = 120 / Math.max(brightness, 1);
                 r = Math.min(255, r * factor);
                 g = Math.min(255, g * factor);
                 b = Math.min(255, b * factor);
             }
             
-            // 2. Saturation boost - ULTRA
+            // 2. Saturation boost - ULTRA AGRESİF
             const max = Math.max(r, g, b);
             const min = Math.min(r, g, b);
             const avg = (r + g + b) / 3;
             
             if (max > 0) {
-                const boost = 2.5; // Daha agresif
+                const boost = 2.2; // Çok daha agresif boost
                 r = Math.min(255, Math.max(0, avg + (r - avg) * boost));
                 g = Math.min(255, Math.max(0, avg + (g - avg) * boost));
                 b = Math.min(255, Math.max(0, avg + (b - avg) * boost));
             }
+            
+            // 3. Contrast artırma - Renkler daha keskin
+            const contrastFactor = 1.3;
+            r = Math.min(255, Math.max(0, ((r - 128) * contrastFactor) + 128));
+            g = Math.min(255, Math.max(0, ((g - 128) * contrastFactor) + 128));
+            b = Math.min(255, Math.max(0, ((b - 128) * contrastFactor) + 128));
 
             const normalizedColor = [
                 r / 255,
@@ -219,10 +280,10 @@
                 b / 255
             ];
 
-            // TÜM YÖNTEMLER DENENİYOR
+            // TÜM YÖNTEMLERİ DENE
             try {
                 CABLES.patch.setVariable('SplatColor', normalizedColor);
-                console.log('✅ Renk:', Math.round(r), Math.round(g), Math.round(b));
+                console.log('✅ Ultra Renk:', Math.round(r), Math.round(g), Math.round(b));
             } catch(e) {}
 
             try {
@@ -260,7 +321,7 @@
                 cancelable: true
             }));
 
-            console.log('🖱️ Mouse down:', startX, startY);
+            console.log('🖱️ Mouse down:', Math.round(startX), Math.round(startY));
 
             // Spiral hareket
             let angle = 0;
