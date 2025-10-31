@@ -70,7 +70,6 @@
             // Silent
         }
 
-        // Parent'tan boyut bilgisi al
         let parentWidth = window.innerWidth;
         let parentHeight = window.innerHeight;
 
@@ -81,7 +80,6 @@
             } catch(e) {}
         }
 
-        // Canvas'ı tam ekran yap
         function forceFullScreenCanvas() {
             const canvas = document.getElementById('glcanvas');
             if (!canvas) return;
@@ -130,46 +128,36 @@
             }, 100);
         }
 
-        // 🎨 COLORS ARRAY'İNDEN EN BELİRGİN RENKLERİ SEÇ
+        // 🎨 EN CANLI ANA RENKLERİ SEÇ
         function selectBestColors(colors) {
             if (!colors || colors.length === 0) {
-                return [{r: 255, g: 100, b: 200}];
+                return [
+                    {r: 255, g: 100, b: 200},
+                    {r: 100, g: 200, b: 255},
+                    {r: 255, g: 200, b: 100}
+                ];
             }
 
+            // Sadece en canlı, doygun renkleri al
             const vibrantColors = colors.filter(c => {
                 const brightness = (c.r + c.g + c.b) / 3;
                 const saturation = Math.max(c.r, c.g, c.b) - Math.min(c.r, c.g, c.b);
-                return brightness > 30 && brightness < 230 && saturation > 20;
+                
+                // Daha agresif filtreleme - SADECE CANLI RENKLER
+                return brightness > 50 && brightness < 220 && saturation > 40;
             });
 
             const workingColors = vibrantColors.length > 0 ? vibrantColors : colors;
 
+            // Doygunluğa göre sırala - EN CANLILAR ÖNCELİKLİ
             const sortedByVibrance = [...workingColors].sort((a, b) => {
                 const satA = Math.max(a.r, a.g, a.b) - Math.min(a.r, a.g, a.b);
                 const satB = Math.max(b.r, b.g, b.b) - Math.min(b.r, b.g, b.b);
                 return satB - satA;
             });
 
-            const top10 = sortedByVibrance.slice(0, 10);
-
-            const finalColors = [];
-            top10.forEach(color => {
-                finalColors.push(color);
-                
-                finalColors.push({
-                    r: Math.min(255, Math.round(color.r * 1.3)),
-                    g: Math.min(255, Math.round(color.g * 1.3)),
-                    b: Math.min(255, Math.round(color.b * 1.3))
-                });
-                
-                finalColors.push({
-                    r: Math.max(0, Math.round(color.r * 0.7)),
-                    g: Math.max(0, Math.round(color.g * 0.7)),
-                    b: Math.max(0, Math.round(color.b * 0.7))
-                });
-            });
-
-            return finalColors.slice(0, 20);
+            // İlk 15 en canlı rengi al
+            return sortedByVibrance.slice(0, 15);
         }
 
         // 🌀 FARKLI HAREKET TİPLERİ
@@ -218,7 +206,7 @@
             }
         ];
 
-        // 🎹 PİYANO MESAJ SİSTEMİ - ÇOK RENKLI, ÇOK FLUİD!
+        // 🎹 PİYANO MESAJ SİSTEMİ - ÇOK RENKLİ FLUIDS!
         window.addEventListener('message', (event) => {
             if (event.data.type === 'pianoKeyPress') {
                 const colors = event.data.colors || [];
@@ -226,7 +214,7 @@
                 
                 if (colors.length === 0) return;
                 
-                // En belirgin 20 rengi al
+                // En canlı renkleri al
                 const bestColors = selectBestColors(colors);
                 
                 if (bestColors.length === 0) return;
@@ -234,32 +222,32 @@
                 // 🌈 3-5 FARKLI FLUİD OLUŞTUR!
                 const numFluids = Math.floor(Math.random() * 3) + 3; // 3-5 arası
                 
-                console.log(`🎹 ${key.toUpperCase()} → ${numFluids} fluid oluşturuluyor!`);
+                console.log(`🎹 ${key.toUpperCase()} → ${numFluids} multi-color fluid!`);
                 
                 for (let i = 0; i < numFluids; i++) {
-                    // Her fluid için FARKLI renk seç
-                    const randomColor = bestColors[Math.floor(Math.random() * bestColors.length)];
+                    // 🎨 HER FLUİD İÇİN 3-4 FARKLI RENK SEÇ!
+                    const numColorsInFluid = Math.floor(Math.random() * 2) + 3; // 3-4 renk
+                    const fluidColors = [];
                     
-                    // Her fluid için FARKLI başlangıç noktası
-                    const baseX = (parentWidth || window.innerWidth) / 2;
-                    const baseY = (parentHeight || window.innerHeight) / 2;
-                    const offsetX = (Math.random() - 0.5) * 400;
-                    const offsetY = (Math.random() - 0.5) * 300;
-                    const startX = baseX + offsetX;
-                    const startY = baseY + offsetY;
+                    for (let j = 0; j < numColorsInFluid; j++) {
+                        const randomColor = bestColors[Math.floor(Math.random() * bestColors.length)];
+                        fluidColors.push(randomColor);
+                    }
+                    
+                    // TAMAMEN RANDOM SPAWN NOKTASI - TÜM EKRANA DAĞILSIN
+                    const startX = Math.random() * (parentWidth || window.innerWidth);
+                    const startY = Math.random() * (parentHeight || window.innerHeight);
                     
                     // Her fluid için FARKLI hareket paterni
                     const pattern = MOVEMENT_PATTERNS[Math.floor(Math.random() * MOVEMENT_PATTERNS.length)];
                     
-                    console.log(`  🎨 Fluid ${i+1}: rgb(${randomColor.r},${randomColor.g},${randomColor.b}) - ${pattern.name}`);
+                    const colorPreview = fluidColors.map(c => `rgb(${c.r},${c.g},${c.b})`).join(' + ');
+                    console.log(`  🎨 Fluid ${i+1}: [${colorPreview}] - ${pattern.name}`);
                     
-                    // Rengi Cables'e gönder
-                    setPianoColor(randomColor);
-                    
-                    // Kısa gecikme ile fluid oluştur (daha organik)
+                    // Kısa gecikme ile fluid oluştur
                     setTimeout(() => {
-                        createCustomSpiral(startX, startY, pattern);
-                    }, i * 50); // Her fluid 50ms arayla
+                        createMultiColorSpiral(startX, startY, fluidColors, pattern);
+                    }, i * 50);
                 }
             }
         });
@@ -280,8 +268,8 @@
             }
         }
 
-        // 🌀 CUSTOM HAREKET PATERNİ İLE SPIRAL
-        function createCustomSpiral(startX, startY, pattern) {
+        // 🌈 ÇOK RENKLİ SPIRAL - HER ADIMDA FARKLI RENK!
+        function createMultiColorSpiral(startX, startY, colors, pattern) {
             const canvas = document.getElementById('glcanvas');
             if (!canvas) return;
             
@@ -297,26 +285,26 @@
             let radius = 0;
             let step = 0;
             
-            // Her patern için farklı parametreler
             const angleIncrement = pattern.angle;
             const radiusIncrement = pattern.radiusGrowth;
             const maxSteps = pattern.steps;
             
-            // Bazı patternlere ekstra özellikler
             const hasWave = pattern.name.includes('wave');
             const hasChaos = pattern.name.includes('chaotic');
             
             const interval = setInterval(() => {
+                // 🎨 HER ADIMDA FARKLI RENK KULLAN!
+                const currentColor = colors[step % colors.length];
+                setPianoColor(currentColor);
+                
                 angle += angleIncrement;
                 radius += radiusIncrement;
                 
-                // Wave pattern için sinüs dalgası ekle
                 let waveOffset = 0;
                 if (hasWave) {
                     waveOffset = Math.sin(step * 0.3) * 20;
                 }
                 
-                // Chaotic pattern için rastgele sapma
                 let chaosX = 0, chaosY = 0;
                 if (hasChaos) {
                     chaosX = (Math.random() - 0.5) * 15;
@@ -349,7 +337,6 @@
             }, 16);
         }
 
-        // Sayfa yüklendiğinde
         window.addEventListener('DOMContentLoaded', () => {
             forceFullScreenCanvas();
         });
