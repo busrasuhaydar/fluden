@@ -174,28 +174,37 @@
             }
         });
 
-        // PNG rengini Cables'e gönder - TÜM YÖNTEMLER DENENİYOR + DAHA BELİRGİN
+        // PNG rengini Cables'e gönder - TÜM YÖNTEMLER + ULTRA BELİRGİN
         function applyPianoColor(color) {
             if (!patchReady || typeof CABLES === 'undefined' || !CABLES.patch) {
                 return;
             }
 
-            // Renkleri daha belirgin yap (saturation boost)
+            // RENK BELİRGİNLEŞTİRME - AGGRESSIVE
             let r = color.r;
             let g = color.g;
             let b = color.b;
             
-            // Saturation artır
+            // 1. Brightness normalize
+            const brightness = (r + g + b) / 3;
+            if (brightness < 100) {
+                // Koyu renkleri aydınlat
+                const factor = 100 / brightness;
+                r = Math.min(255, r * factor);
+                g = Math.min(255, g * factor);
+                b = Math.min(255, b * factor);
+            }
+            
+            // 2. Saturation boost - ULTRA
             const max = Math.max(r, g, b);
             const min = Math.min(r, g, b);
-            const saturation = max > 0 ? (max - min) / max : 0;
+            const avg = (r + g + b) / 3;
             
-            if (saturation < 0.8) {
-                // Rengi daha canlı yap
-                const boost = 1.3;
-                r = Math.min(255, r * boost);
-                g = Math.min(255, g * boost);
-                b = Math.min(255, b * boost);
+            if (max > 0) {
+                const boost = 1.6; // Daha agresif
+                r = Math.min(255, Math.max(0, avg + (r - avg) * boost));
+                g = Math.min(255, Math.max(0, avg + (g - avg) * boost));
+                b = Math.min(255, Math.max(0, avg + (b - avg) * boost));
             }
 
             const normalizedColor = [
@@ -204,30 +213,27 @@
                 b / 255
             ];
 
+            // TÜM YÖNTEMLER DENENİYOR
             try {
-                // YÖNTEM 1: SplatColor variable
                 CABLES.patch.setVariable('SplatColor', normalizedColor);
-            } catch(e) {
-                // Sessiz
-            }
+                console.log('✅ Renk:', Math.round(r), Math.round(g), Math.round(b));
+            } catch(e) {}
 
-            // YÖNTEM 2: pianoColorR/G/B (varsa)
-            try {
-                CABLES.patch.setVariable('pianoColorR', r);
-                CABLES.patch.setVariable('pianoColorG', g);
-                CABLES.patch.setVariable('pianoColorB', b);
-            } catch(e) {
-                // Sessiz
-            }
-
-            // YÖNTEM 3: Normalized RGB (varsa)
             try {
                 CABLES.patch.setVariable('pianoColorR', normalizedColor[0]);
                 CABLES.patch.setVariable('pianoColorG', normalizedColor[1]);
                 CABLES.patch.setVariable('pianoColorB', normalizedColor[2]);
-            } catch(e) {
-                // Sessiz
-            }
+            } catch(e) {}
+
+            try {
+                CABLES.patch.setVariable('colorR', normalizedColor[0]);
+                CABLES.patch.setVariable('colorG', normalizedColor[1]);
+                CABLES.patch.setVariable('colorB', normalizedColor[2]);
+            } catch(e) {}
+            
+            try {
+                CABLES.patch.setVariable('color', normalizedColor);
+            } catch(e) {}
         }
 
         // Mouse simülasyonu - SPIRAL HAREKET
