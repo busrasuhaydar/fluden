@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Piano Fluid - Enhanced</title>
+    <title>Piano Fluid - Living Art</title>
     <style>
         * {
             margin: 0 !important;
@@ -74,14 +74,11 @@
         let parentWidth = window.innerWidth;
         let parentHeight = window.innerHeight;
 
-        // iframe içindeyse parent'ın gerçek boyutunu al
         if (window.parent !== window) {
             try {
                 parentWidth = window.parent.innerWidth;
                 parentHeight = window.parent.innerHeight;
-            } catch(e) {
-                // Cross-origin hatası, varsayılan değerler kullan
-            }
+            } catch(e) {}
         }
 
         // Canvas'ı tam ekran yap
@@ -89,15 +86,11 @@
             const canvas = document.getElementById('glcanvas');
             if (!canvas) return;
             
-            // iframe içindeki gerçek görünür alanı kullan
             const width = parentWidth || window.innerWidth || document.documentElement.clientWidth;
             const height = parentHeight || window.innerHeight || document.documentElement.clientHeight;
             
-            // Canvas resolution (WebGL için kritik!)
             canvas.width = width;
             canvas.height = height;
-            
-            // Canvas display size
             canvas.style.width = width + 'px';
             canvas.style.height = height + 'px';
             canvas.style.position = 'absolute';
@@ -112,7 +105,6 @@
             hideStatsPanels();
             forceFullScreenCanvas();
             
-            // Çoklu kontrol
             setTimeout(forceFullScreenCanvas, 100);
             setTimeout(forceFullScreenCanvas, 500);
             setTimeout(forceFullScreenCanvas, 1000);
@@ -125,7 +117,6 @@
             forceFullScreenCanvas();
         }
 
-        // FPS/CPU panellerini gizle
         function hideStatsPanels() {
             setTimeout(() => {
                 const statsDivs = document.querySelectorAll('div');
@@ -145,17 +136,14 @@
                 return [{r: 255, g: 100, b: 200}];
             }
 
-            // 1. Çok koyu/açık/gri renkleri filtrele
             const vibrantColors = colors.filter(c => {
                 const brightness = (c.r + c.g + c.b) / 3;
                 const saturation = Math.max(c.r, c.g, c.b) - Math.min(c.r, c.g, c.b);
-                
                 return brightness > 30 && brightness < 230 && saturation > 20;
             });
 
             const workingColors = vibrantColors.length > 0 ? vibrantColors : colors;
 
-            // 2. Doygunluğa göre sırala
             const sortedByVibrance = [...workingColors].sort((a, b) => {
                 const satA = Math.max(a.r, a.g, a.b) - Math.min(a.r, a.g, a.b);
                 const satB = Math.max(b.r, b.g, b.b) - Math.min(b.r, b.g, b.b);
@@ -164,7 +152,6 @@
 
             const top10 = sortedByVibrance.slice(0, 10);
 
-            // 3. Varyasyonlar
             const finalColors = [];
             top10.forEach(color => {
                 finalColors.push(color);
@@ -185,7 +172,53 @@
             return finalColors.slice(0, 20);
         }
 
-        // 🎹 PİYANO MESAJ SİSTEMİ
+        // 🌀 FARKLI HAREKET TİPLERİ
+        const MOVEMENT_PATTERNS = [
+            {
+                name: 'spiral_right',
+                angle: 0.6,
+                radiusGrowth: 3,
+                steps: 30
+            },
+            {
+                name: 'spiral_left',
+                angle: -0.6,
+                radiusGrowth: 3,
+                steps: 30
+            },
+            {
+                name: 'fast_spiral',
+                angle: 0.9,
+                radiusGrowth: 5,
+                steps: 25
+            },
+            {
+                name: 'slow_wave',
+                angle: 0.3,
+                radiusGrowth: 2,
+                steps: 40
+            },
+            {
+                name: 'chaotic',
+                angle: 1.2,
+                radiusGrowth: 4,
+                steps: 35
+            },
+            {
+                name: 'gentle_flow',
+                angle: 0.4,
+                radiusGrowth: 2.5,
+                steps: 35
+            },
+            {
+                name: 'explosive',
+                angle: 0.8,
+                radiusGrowth: 6,
+                steps: 20
+            }
+        ];
+
+        // 🎹 PİYANO MESAJ SİSTEMİ - ÇOK RENKLI, ÇOK FLUİD!
         window.addEventListener('message', (event) => {
             if (event.data.type === 'pianoKeyPress') {
                 const colors = event.data.colors || [];
@@ -196,19 +229,38 @@
                 // En belirgin 20 rengi al
                 const bestColors = selectBestColors(colors);
                 
-                // Random renk seç
-                const randomColor = bestColors[Math.floor(Math.random() * bestColors.length)];
+                if (bestColors.length === 0) return;
                 
-                console.log('🎹', key.toUpperCase(), '→', `rgb(${randomColor.r},${randomColor.g},${randomColor.b})`);
+                // 🌈 3-5 FARKLI FLUİD OLUŞTUR!
+                const numFluids = Math.floor(Math.random() * 3) + 3; // 3-5 arası
                 
-                // Rengi Cables'e gönder
-                setPianoColor(randomColor);
+                console.log(`🎹 ${key.toUpperCase()} → ${numFluids} fluid oluşturuluyor!`);
                 
-                // FARKLI NOKTALARDA OLUŞTUR - Parent boyutuna göre
-                const randomX = Math.random() * (parentWidth || window.innerWidth);
-                const randomY = Math.random() * (parentHeight || window.innerHeight);
-                
-                createPianoSpiral(randomX, randomY);
+                for (let i = 0; i < numFluids; i++) {
+                    // Her fluid için FARKLI renk seç
+                    const randomColor = bestColors[Math.floor(Math.random() * bestColors.length)];
+                    
+                    // Her fluid için FARKLI başlangıç noktası
+                    const baseX = (parentWidth || window.innerWidth) / 2;
+                    const baseY = (parentHeight || window.innerHeight) / 2;
+                    const offsetX = (Math.random() - 0.5) * 400;
+                    const offsetY = (Math.random() - 0.5) * 300;
+                    const startX = baseX + offsetX;
+                    const startY = baseY + offsetY;
+                    
+                    // Her fluid için FARKLI hareket paterni
+                    const pattern = MOVEMENT_PATTERNS[Math.floor(Math.random() * MOVEMENT_PATTERNS.length)];
+                    
+                    console.log(`  🎨 Fluid ${i+1}: rgb(${randomColor.r},${randomColor.g},${randomColor.b}) - ${pattern.name}`);
+                    
+                    // Rengi Cables'e gönder
+                    setPianoColor(randomColor);
+                    
+                    // Kısa gecikme ile fluid oluştur (daha organik)
+                    setTimeout(() => {
+                        createCustomSpiral(startX, startY, pattern);
+                    }, i * 50); // Her fluid 50ms arayla
+                }
             }
         });
 
@@ -228,8 +280,8 @@
             }
         }
 
-        // Spiral mouse hareketi
-        function createPianoSpiral(startX, startY) {
+        // 🌀 CUSTOM HAREKET PATERNİ İLE SPIRAL
+        function createCustomSpiral(startX, startY, pattern) {
             const canvas = document.getElementById('glcanvas');
             if (!canvas) return;
             
@@ -244,14 +296,35 @@
             let angle = 0;
             let radius = 0;
             let step = 0;
-            const maxSteps = 30;
+            
+            // Her patern için farklı parametreler
+            const angleIncrement = pattern.angle;
+            const radiusIncrement = pattern.radiusGrowth;
+            const maxSteps = pattern.steps;
+            
+            // Bazı patternlere ekstra özellikler
+            const hasWave = pattern.name.includes('wave');
+            const hasChaos = pattern.name.includes('chaotic');
             
             const interval = setInterval(() => {
-                angle += 0.6;
-                radius += 3;
+                angle += angleIncrement;
+                radius += radiusIncrement;
                 
-                const x = startX + Math.cos(angle) * radius;
-                const y = startY + Math.sin(angle) * radius;
+                // Wave pattern için sinüs dalgası ekle
+                let waveOffset = 0;
+                if (hasWave) {
+                    waveOffset = Math.sin(step * 0.3) * 20;
+                }
+                
+                // Chaotic pattern için rastgele sapma
+                let chaosX = 0, chaosY = 0;
+                if (hasChaos) {
+                    chaosX = (Math.random() - 0.5) * 15;
+                    chaosY = (Math.random() - 0.5) * 15;
+                }
+                
+                const x = startX + Math.cos(angle) * radius + waveOffset + chaosX;
+                const y = startY + Math.sin(angle) * radius + chaosY;
                 
                 canvas.dispatchEvent(new MouseEvent('mousemove', {
                     clientX: x,
@@ -303,11 +376,9 @@
 
         document.getElementById('glcanvas').addEventListener('touchmove', (e)=>{ e.preventDefault(); }, false);
         
-        // Periyodik kontroller
         setInterval(hideStatsPanels, 1000);
         setInterval(forceFullScreenCanvas, 2000);
         
-        // Parent boyut değişimini dinle
         window.addEventListener('resize', () => {
             try {
                 if (window.parent !== window) {
@@ -321,7 +392,6 @@
             forceFullScreenCanvas();
         });
 
-        // Parent'tan mesaj al (boyut bilgisi için)
         window.addEventListener('message', (event) => {
             if (event.data.type === 'parentResize') {
                 parentWidth = event.data.width;
