@@ -12,36 +12,37 @@
             -moz-user-select: none;
             -ms-user-select: none;
             user-select: none;
-            box-sizing: border-box;
+            box-sizing: border-box !important;
         }
 
-        html, body {
-            width: 100vw !important;
-            height: 100vh !important;
-            overflow: hidden !important;
-            background-color: #000;
+        html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: transparent !important;
             color: #fff;
             font-family: Helvetica, Arial, sans-serif;
-            position: fixed;
-            top: 0;
-            left: 0;
+            position: relative;
         }
 
-        canvas {
-            display: block;
-            position: fixed !important;
+        #glcanvas {
+            display: block !important;
+            position: absolute !important;
             top: 0 !important;
             left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
             width: 100% !important;
             height: 100% !important;
-            min-width: 100vw !important;
-            min-height: 100vh !important;
-            outline: 0;
-        }
-        
-        #glcanvas {
-            width: 100vw !important;
-            height: 100vh !important;
+            outline: 0 !important;
+            transform: none !important;
+            background: transparent !important;
         }
 
         /* FPS/CPU yazılarını gizle */
@@ -56,10 +57,10 @@
     </style>
 
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
 </head>
 <body>
-    <canvas id="glcanvas" tabindex="1" style="width:100vw;height:100vh;"></canvas>
+    <canvas id="glcanvas" tabindex="1"></canvas>
 
     <script type="text/javascript" src="js/patch.js" async></script>
 
@@ -69,14 +70,59 @@
             // Silent
         }
 
+        // Parent'tan boyut bilgisi al
+        let parentWidth = window.innerWidth;
+        let parentHeight = window.innerHeight;
+
+        // iframe içindeyse parent'ın gerçek boyutunu al
+        if (window.parent !== window) {
+            try {
+                parentWidth = window.parent.innerWidth;
+                parentHeight = window.parent.innerHeight;
+            } catch(e) {
+                // Cross-origin hatası, varsayılan değerler kullan
+            }
+        }
+
+        // Canvas'ı tam ekran yap
+        function forceFullScreenCanvas() {
+            const canvas = document.getElementById('glcanvas');
+            if (!canvas) return;
+            
+            // iframe içindeki gerçek görünür alanı kullan
+            const width = parentWidth || window.innerWidth || document.documentElement.clientWidth;
+            const height = parentHeight || window.innerHeight || document.documentElement.clientHeight;
+            
+            // Canvas resolution (WebGL için kritik!)
+            canvas.width = width;
+            canvas.height = height;
+            
+            // Canvas display size
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+            canvas.style.position = 'absolute';
+            canvas.style.top = '0';
+            canvas.style.left = '0';
+            
+            console.log('📐 Canvas boyutu:', width, 'x', height);
+        }
+
         function patchInitialized(patch) {
             console.log('✅ Fluid hazır!');
             hideStatsPanels();
+            forceFullScreenCanvas();
+            
+            // Çoklu kontrol
+            setTimeout(forceFullScreenCanvas, 100);
+            setTimeout(forceFullScreenCanvas, 500);
+            setTimeout(forceFullScreenCanvas, 1000);
+            setTimeout(forceFullScreenCanvas, 2000);
         }
 
         function patchFinishedLoading(patch) {
             console.log('🎨 Yükleme tamamlandı!');
             hideStatsPanels();
+            forceFullScreenCanvas();
         }
 
         // FPS/CPU panellerini gizle
@@ -104,14 +150,12 @@
                 const brightness = (c.r + c.g + c.b) / 3;
                 const saturation = Math.max(c.r, c.g, c.b) - Math.min(c.r, c.g, c.b);
                 
-                // Çok koyu, çok açık veya gri değilse kabul et
                 return brightness > 30 && brightness < 230 && saturation > 20;
             });
 
-            // Eğer filtreleme sonrası hiç renk kalmadıysa orijinali kullan
             const workingColors = vibrantColors.length > 0 ? vibrantColors : colors;
 
-            // 2. En belirgin 10 rengi seç (doygunluğa göre sırala)
+            // 2. Doygunluğa göre sırala
             const sortedByVibrance = [...workingColors].sort((a, b) => {
                 const satA = Math.max(a.r, a.g, a.b) - Math.min(a.r, a.g, a.b);
                 const satB = Math.max(b.r, b.g, b.b) - Math.min(b.r, b.g, b.b);
@@ -120,20 +164,17 @@
 
             const top10 = sortedByVibrance.slice(0, 10);
 
-            // 3. Her renk için varyasyonlar ekle
+            // 3. Varyasyonlar
             const finalColors = [];
             top10.forEach(color => {
-                // Orijinal
                 finalColors.push(color);
                 
-                // Parlak varyasyon
                 finalColors.push({
                     r: Math.min(255, Math.round(color.r * 1.3)),
                     g: Math.min(255, Math.round(color.g * 1.3)),
                     b: Math.min(255, Math.round(color.b * 1.3))
                 });
                 
-                // Koyu varyasyon
                 finalColors.push({
                     r: Math.max(0, Math.round(color.r * 0.7)),
                     g: Math.max(0, Math.round(color.g * 0.7)),
@@ -141,7 +182,6 @@
                 });
             });
 
-            // En fazla 20 renk döndür
             return finalColors.slice(0, 20);
         }
 
@@ -156,7 +196,7 @@
                 // En belirgin 20 rengi al
                 const bestColors = selectBestColors(colors);
                 
-                // Random bir renk seç
+                // Random renk seç
                 const randomColor = bestColors[Math.floor(Math.random() * bestColors.length)];
                 
                 console.log('🎹', key.toUpperCase(), '→', `rgb(${randomColor.r},${randomColor.g},${randomColor.b})`);
@@ -164,9 +204,9 @@
                 // Rengi Cables'e gönder
                 setPianoColor(randomColor);
                 
-                // HER TUŞTA FARKLI NOKTADA OLUŞTUR
-                const randomX = Math.random() * window.innerWidth;
-                const randomY = Math.random() * window.innerHeight;
+                // FARKLI NOKTALARDA OLUŞTUR - Parent boyutuna göre
+                const randomX = Math.random() * (parentWidth || window.innerWidth);
+                const randomY = Math.random() * (parentHeight || window.innerHeight);
                 
                 createPianoSpiral(randomX, randomY);
             }
@@ -236,11 +276,13 @@
             }, 16);
         }
 
+        // Sayfa yüklendiğinde
+        window.addEventListener('DOMContentLoaded', () => {
+            forceFullScreenCanvas();
+        });
+
         document.addEventListener("CABLES.jsLoaded", function (event) {
-            // Canvas boyutlarını zorla ayarla
-            const canvas = document.getElementById('glcanvas');
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+            forceFullScreenCanvas();
             
             CABLES.patch = new CABLES.Patch({
                 patch: CABLES.exportedPatch,
@@ -256,18 +298,37 @@
             });
             
             hideStatsPanels();
-            
-            // Pencere boyutu değişince yeniden ayarla
-            window.addEventListener('resize', () => {
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight;
-            });
+            setTimeout(forceFullScreenCanvas, 50);
         });
 
         document.getElementById('glcanvas').addEventListener('touchmove', (e)=>{ e.preventDefault(); }, false);
         
-        // Periyodik olarak stats panellerini kontrol et
+        // Periyodik kontroller
         setInterval(hideStatsPanels, 1000);
+        setInterval(forceFullScreenCanvas, 2000);
+        
+        // Parent boyut değişimini dinle
+        window.addEventListener('resize', () => {
+            try {
+                if (window.parent !== window) {
+                    parentWidth = window.parent.innerWidth;
+                    parentHeight = window.parent.innerHeight;
+                }
+            } catch(e) {
+                parentWidth = window.innerWidth;
+                parentHeight = window.innerHeight;
+            }
+            forceFullScreenCanvas();
+        });
+
+        // Parent'tan mesaj al (boyut bilgisi için)
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'parentResize') {
+                parentWidth = event.data.width;
+                parentHeight = event.data.height;
+                forceFullScreenCanvas();
+            }
+        });
     </script>
 </body>
 </html>
