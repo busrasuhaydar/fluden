@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>busfluid</title>
+    <title>Piano Fluid - FINAL</title>
     <style>
         body {
             margin: 0;
             background-color: #000;
             color: #fff;
             font-family: Helvetica, Arial, sans-serif;
-            overflow: hidden; /* disable scrolling / rubberband effect on mobile */
+            overflow: hidden;
             height:100vh;
         }
 
@@ -19,7 +19,6 @@
         }
 
         * {
-            /* disable on touch highlights of html elements, especially on mobile! */
             -webkit-tap-highlight-color: transparent;
             -webkit-touch-callout: none;
             -webkit-user-select: none;
@@ -32,194 +31,116 @@
 
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1">
-    <meta itemprop="name" content="busfluid">
-    <meta itemprop="description" content="made with cables">
-    <meta itemprop="image" content="screenshot.png">
-    <meta name="description" content="made with cables"/>
-
 </head>
 <body>
     <canvas id="glcanvas" width="100vw" height="100vh" tabindex="1"></canvas>
 
-    
     <script type="text/javascript" src="js/patch.js" async></script>
-    
 
     <script type="text/javascript">
 
-        // 🎹 PIANO RENK SİSTEMİ - SplatColor kullan
-        let fluidPatch = null;
-
-        function showError(initiator,...args)
-        {
-            CABLES.logErrorConsole("[" + initiator + "]", ...args);
+        function showError(initiator,...args) {
+            // Silent
         }
 
-        function patchInitialized(patch)
-        {
-            // Patch'i global olarak sakla
-            fluidPatch = patch;
-            
-            // SplatColor başlat (Array [R, G, B] formatında, 0-1 normalize)
-            patch.setVariable('SplatColor', [0.5, 0.5, 0.8]);
-            
-            console.log('✅ Cables patch hazır - SplatColor sistemi aktif!');
-            console.log('📋 Mevcut variable\'lar:', Object.keys(patch.config.variables || {}));
+        function patchInitialized(patch) {
+            console.log('✅ Fluid hazır!');
         }
 
-        function patchFinishedLoading(patch)
-        {
-            // Canvas'ı tam ekran yap
-            resizeCanvas();
-            
-            console.log('🎨 Fluid yüklendi, piano mesajları bekleniyor...');
+        function patchFinishedLoading(patch) {
+            console.log('🎨 Yükleme tamamlandı!');
         }
 
-        // Canvas tam ekran - AGRESIF
-        function resizeCanvas() {
-            const canvas = document.getElementById('glcanvas');
-            if (!canvas) return;
-            
-            const w = window.innerWidth;
-            const h = window.innerHeight;
-            
-            canvas.width = w;
-            canvas.height = h;
-            canvas.style.cssText = `
-                position: fixed !important;
-                top: 0 !important;
-                left: 0 !important;
-                width: ${w}px !important;
-                height: ${h}px !important;
-                display: block !important;
-            `;
-            
-            console.log('📐 Canvas:', w, 'x', h);
-        }
-
-        window.addEventListener('resize', resizeCanvas);
-        window.addEventListener('load', () => {
-            resizeCanvas();
-            setTimeout(resizeCanvas, 100);
-            setTimeout(resizeCanvas, 500);
-            setTimeout(resizeCanvas, 1000);
-        });
-
-        // 🎹 PİYANODAN MESAJ ALICI
+        // 🎹 PİYANO MESAJ SİSTEMİ
         window.addEventListener('message', (event) => {
             if (event.data.type === 'pianoKeyPress') {
-                const colors = event.data.colors;
+                const colors = event.data.colors || [];
                 const key = event.data.key;
                 const x = event.data.x || window.innerWidth / 2;
                 const y = event.data.y || window.innerHeight / 2;
                 
-                if (!colors || colors.length === 0) return;
+                if (colors.length === 0) return;
                 
-                // İlk rengi kullan
                 const color = colors[0];
-                
                 console.log('🎹', key.toUpperCase(), '→', `rgb(${color.r},${color.g},${color.b})`);
                 
-                // SplatColor'ı güncelle
-                if (fluidPatch) {
-                    const normalizedColor = [
-                        color.r / 255,
-                        color.g / 255,
-                        color.b / 255
-                    ];
-                    
-                    try {
-                        fluidPatch.setVariable('SplatColor', normalizedColor);
-                    } catch(e) {
-                        console.warn('SplatColor set failed:', e);
-                    }
-                    
-                    // Mouse pozisyonu (0-1 normalize, Y ters)
-                    const normalizedX = x / window.innerWidth;
-                    const normalizedY = 1.0 - (y / window.innerHeight);
-                    
-                    // Mouse drag başlat
-                    startMouseDrag(normalizedX, normalizedY, normalizedColor);
-                }
+                // PNG rengini Cables'e gönder
+                setPianoColor(color);
+                
+                // Mouse simülasyonu
+                createPianoSpiral(x, y);
             }
         });
 
-        // Mouse drag simülasyonu - GERÇEK MOUSE EVENTS
-        function startMouseDrag(startX, startY, color) {
-            if (!fluidPatch) return;
+        // PNG rengini Cables SplatColor'a set et
+        function setPianoColor(color) {
+            if (typeof CABLES === 'undefined' || !CABLES.patch) return;
             
+            try {
+                const normalizedColor = [
+                    color.r / 255,
+                    color.g / 255,
+                    color.b / 255
+                ];
+                CABLES.patch.setVariable('SplatColor', normalizedColor);
+                console.log('✅ Renk set:', normalizedColor.map(v => v.toFixed(2)));
+            } catch(e) {
+                console.warn('Renk set hatası');
+            }
+        }
+
+        // Spiral mouse hareketi
+        function createPianoSpiral(startX, startY) {
             const canvas = document.getElementById('glcanvas');
             if (!canvas) return;
             
-            const pixelX = startX * window.innerWidth;
-            const pixelY = startY * window.innerHeight;
-            
-            console.log('🖱️ Mouse event:', Math.round(pixelX), Math.round(pixelY));
-            
-            // SplatColor set et
-            try {
-                fluidPatch.setVariable('SplatColor', color);
-            } catch(e) {}
-            
-            // Mouse down event
-            const mouseDown = new MouseEvent('mousedown', {
-                clientX: pixelX,
-                clientY: pixelY,
+            // Mouse down
+            canvas.dispatchEvent(new MouseEvent('mousedown', {
+                clientX: startX,
+                clientY: startY,
                 button: 0,
                 buttons: 1,
                 bubbles: true
-            });
-            canvas.dispatchEvent(mouseDown);
+            }));
             
-            // Spiral mouse move
             let angle = 0;
             let radius = 0;
             let step = 0;
-            const maxSteps = 40;
+            const maxSteps = 30;
             
-            const dragInterval = setInterval(() => {
-                angle += 0.8;
-                radius += 5;
+            const interval = setInterval(() => {
+                angle += 0.6;
+                radius += 3;
                 
-                const newX = pixelX + Math.cos(angle) * radius;
-                const newY = pixelY + Math.sin(angle) * radius;
+                const x = startX + Math.cos(angle) * radius;
+                const y = startY + Math.sin(angle) * radius;
                 
-                // Mouse move event
-                const mouseMove = new MouseEvent('mousemove', {
-                    clientX: newX,
-                    clientY: newY,
+                // Mouse move
+                canvas.dispatchEvent(new MouseEvent('mousemove', {
+                    clientX: x,
+                    clientY: y,
                     button: 0,
                     buttons: 1,
                     bubbles: true
-                });
-                canvas.dispatchEvent(mouseMove);
-                
-                // Rengi güncelle
-                try {
-                    fluidPatch.setVariable('SplatColor', color);
-                } catch(e) {}
+                }));
                 
                 step++;
                 if (step >= maxSteps) {
-                    clearInterval(dragInterval);
+                    clearInterval(interval);
                     
-                    // Mouse up event
-                    const mouseUp = new MouseEvent('mouseup', {
-                        clientX: newX,
-                        clientY: newY,
+                    // Mouse up
+                    canvas.dispatchEvent(new MouseEvent('mouseup', {
+                        clientX: x,
+                        clientY: y,
                         button: 0,
                         buttons: 0,
                         bubbles: true
-                    });
-                    canvas.dispatchEvent(mouseUp);
-                    
-                    console.log('✅ Drag bitti');
+                    }));
                 }
             }, 16);
         }
 
-        document.addEventListener("CABLES.jsLoaded", function (event)
-        {
+        document.addEventListener("CABLES.jsLoaded", function (event) {
             CABLES.patch = new CABLES.Patch({
                 patch: CABLES.exportedPatch,
                 "prefixAssetPath": "",
@@ -230,11 +151,10 @@
                 "onError": showError,
                 "onPatchLoaded": patchInitialized,
                 "onFinishedLoading": patchFinishedLoading,
-                "canvas": {"alpha":true, "premultipliedAlpha":true } // make canvas transparent
+                "canvas": {"alpha":true, "premultipliedAlpha":true }
             });
         });
 
-        // disable rubberband effect on mobile devices
         document.getElementById('glcanvas').addEventListener('touchmove', (e)=>{ e.preventDefault(); }, false);
     </script>
 </body>
