@@ -70,10 +70,14 @@
             patchReady = true;
             console.log('✅ Cables patch hazır!');
             
+            // FORCE FULLSCREEN
             forceFullscreen();
-            hideAllText();
-            setInterval(hideAllText, 100);
             
+            // HİÇBİR YAZI GÖRÜNMESIN
+            hideAllText();
+            setInterval(hideAllText, 100); // Her 100ms kontrol et
+            
+            // Test: SplatColor variable'ı var mı?
             setTimeout(() => {
                 try {
                     const testColor = patch.getVariable('SplatColor');
@@ -114,6 +118,7 @@
         }
 
         function hideAllText() {
+            // TÜM text elementlerini gizle
             document.querySelectorAll('div, span, p, h1, h2, h3, h4, h5, h6, a, label, button').forEach(el => {
                 if (el.id !== 'root' && el.tagName.toLowerCase() !== 'canvas') {
                     el.style.display = 'none';
@@ -169,32 +174,34 @@
             }
         });
 
-        // PNG rengini Cables'e gönder - DAHA BELİRGİN RENKLER
+        // PNG rengini Cables'e gönder - TÜM YÖNTEMLER + ULTRA BELİRGİN
         function applyPianoColor(color) {
             if (!patchReady || typeof CABLES === 'undefined' || !CABLES.patch) {
                 return;
             }
 
-            // DAHA BELİRGİN RENKLER - MAKSIMUM BOOST
+            // RENK BELİRGİNLEŞTİRME - AGGRESSIVE
             let r = color.r;
             let g = color.g;
             let b = color.b;
             
-            // 1. Koyu renkleri daha fazla aydınlat
+            // 1. Brightness normalize
             const brightness = (r + g + b) / 3;
-            if (brightness < 120) {
-                const factor = 120 / Math.max(brightness, 1);
+            if (brightness < 100) {
+                // Koyu renkleri aydınlat
+                const factor = 100 / brightness;
                 r = Math.min(255, r * factor);
                 g = Math.min(255, g * factor);
                 b = Math.min(255, b * factor);
             }
             
-            // 2. Daha agresif saturation boost
+            // 2. Saturation boost - ULTRA
             const max = Math.max(r, g, b);
+            const min = Math.min(r, g, b);
             const avg = (r + g + b) / 3;
             
             if (max > 0) {
-                const boost = 2.0; // MAKSIMUM boost (1.6'dan 2.0'a)
+                const boost = 1.6; // Daha agresif
                 r = Math.min(255, Math.max(0, avg + (r - avg) * boost));
                 g = Math.min(255, Math.max(0, avg + (g - avg) * boost));
                 b = Math.min(255, Math.max(0, avg + (b - avg) * boost));
@@ -206,6 +213,7 @@
                 b / 255
             ];
 
+            // TÜM YÖNTEMLER DENENİYOR
             try {
                 CABLES.patch.setVariable('SplatColor', normalizedColor);
                 console.log('✅ Renk:', Math.round(r), Math.round(g), Math.round(b));
@@ -236,6 +244,7 @@
                 return;
             }
 
+            // Mouse down
             canvas.dispatchEvent(new MouseEvent('mousedown', {
                 clientX: startX,
                 clientY: startY,
@@ -247,6 +256,7 @@
 
             console.log('🖱️ Mouse down:', startX, startY);
 
+            // Spiral hareket
             let angle = 0;
             let radius = 0;
             let step = 0;
@@ -259,6 +269,7 @@
                 const x = startX + Math.cos(angle) * radius;
                 const y = startY + Math.sin(angle) * radius;
 
+                // Mouse move
                 canvas.dispatchEvent(new MouseEvent('mousemove', {
                     clientX: x,
                     clientY: y,
@@ -272,6 +283,7 @@
                 if (step >= maxSteps || radius > 200) {
                     clearInterval(spiralInterval);
 
+                    // Mouse up
                     canvas.dispatchEvent(new MouseEvent('mouseup', {
                         clientX: x,
                         clientY: y,
