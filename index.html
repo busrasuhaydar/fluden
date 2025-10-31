@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Piano Fluid - ULTRA ENHANCED</title>
+    <title>Piano Fluid - FINAL SOLUTION</title>
     <style>
         * {
             margin: 0;
@@ -13,22 +13,21 @@
             width: 100vw !important;
             height: 100vh !important;
             background-color: #000;
-            overflow: hidden !important;
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
+            overflow: hidden;
+            position: fixed;
+            top: 0;
+            left: 0;
         }
 
         canvas {
-            display: block !important;
+            display: block;
             position: fixed !important;
             top: 0 !important;
             left: 0 !important;
             width: 100vw !important;
             height: 100vh !important;
-            outline: 0 !important;
-            z-index: 1 !important;
-            border: none !important;
+            outline: 0;
+            z-index: 1;
         }
 
         /* HİÇBİR YAZI GÖRÜNMESİN */
@@ -52,10 +51,10 @@
     </style>
 
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1">
 </head>
 <body>
-    <canvas id="glcanvas" tabindex="1"></canvas>
+    <canvas id="glcanvas" width="100vw" height="100vh" tabindex="1"></canvas>
 
     <script type="text/javascript" src="js/patch.js" async></script>
 
@@ -71,13 +70,14 @@
             patchReady = true;
             console.log('✅ Cables patch hazır!');
             
-            // FORCE FULLSCREEN - ULTRA
+            // FORCE FULLSCREEN
             forceFullscreen();
             
             // HİÇBİR YAZI GÖRÜNMESİN
             hideAllText();
-            setInterval(hideAllText, 100);
+            setInterval(hideAllText, 100); // Her 100ms kontrol et
             
+            // Test: SplatColor variable'ı var mı?
             setTimeout(() => {
                 try {
                     const testColor = patch.getVariable('SplatColor');
@@ -95,28 +95,16 @@
             const w = window.innerWidth;
             const h = window.innerHeight;
             
-            // Canvas boyutunu zorla ayarla
             canvas.width = w;
             canvas.height = h;
             canvas.style.cssText = `
                 position: fixed !important;
                 top: 0 !important;
                 left: 0 !important;
-                width: 100vw !important;
-                height: 100vh !important;
-                max-width: 100vw !important;
-                max-height: 100vh !important;
+                width: ${w}px !important;
+                height: ${h}px !important;
                 display: block !important;
                 z-index: 1 !important;
-                border: none !important;
-                outline: none !important;
-            `;
-            
-            document.documentElement.style.cssText = `
-                width: 100vw !important;
-                height: 100vh !important;
-                overflow: hidden !important;
-                position: fixed !important;
             `;
             
             document.body.style.cssText = `
@@ -126,12 +114,11 @@
                 position: fixed !important;
                 top: 0 !important;
                 left: 0 !important;
-                margin: 0 !important;
-                padding: 0 !important;
             `;
         }
 
         function hideAllText() {
+            // TÜM text elementlerini gizle
             document.querySelectorAll('div, span, p, h1, h2, h3, h4, h5, h6, a, label, button').forEach(el => {
                 if (el.id !== 'root' && el.tagName.toLowerCase() !== 'canvas') {
                     el.style.display = 'none';
@@ -141,25 +128,19 @@
             });
         }
 
-        window.addEventListener('resize', () => {
-            forceFullscreen();
-            setTimeout(forceFullscreen, 100);
-        });
-        
+        window.addEventListener('resize', forceFullscreen);
         window.addEventListener('load', () => {
             forceFullscreen();
             hideAllText();
             setTimeout(forceFullscreen, 100);
             setTimeout(forceFullscreen, 500);
-            setTimeout(forceFullscreen, 1000);
         });
 
         function patchFinishedLoading(patch) {
             console.log('🎨 Fluid yüklendi!');
-            forceFullscreen();
         }
 
-        // 🎹 PİYANO MESAJ SİSTEMİ - ULTRA BELİRGİN RENKLER + RANDOM POZİSYON!
+        // 🎹 PİYANO MESAJ SİSTEMİ - ULTRA RENKLI + RANDOM POZİSYON!
         window.addEventListener('message', (event) => {
             if (event.data.type === 'pianoKeyPress') {
                 const colors = event.data.colors || [];
@@ -167,24 +148,18 @@
                 
                 if (colors.length === 0) return;
                 
-                // 🎯 EN BELİRGİN 10 RENGİ ÖNCE AL
-                const vibrantColors = selectMostVibrantColors(colors, 10);
-                // 🎨 DİĞER 10 RENGİ DE AL (parlak, orta, koyu)
-                const remainingColors = colors.slice(10, 20);
-                const finalColors = [...vibrantColors, ...remainingColors];
-                
                 // 🎲 RANDOM POZİSYON - Her tuş farklı yerde başlıyor!
                 const x = Math.random() * window.innerWidth;
                 const y = Math.random() * window.innerHeight;
                 
-                console.log('🎹', key.toUpperCase(), '→', finalColors.length, 'ultra renk! Pozisyon:', Math.round(x), Math.round(y));
+                console.log('🎹', key.toUpperCase(), '→', colors.length, 'renk! Pozisyon:', Math.round(x), Math.round(y));
                 
-                // ANA RENK: En belirgin merkez spiral
-                applyPianoColor(finalColors[0]);
+                // ANA RENK: Merkez spiral
+                applyPianoColor(colors[0]);
                 simulatePianoInput(x, y);
                 
-                // EK RENKLER: Çevrede patlamalar
-                const extraColors = finalColors.slice(1, 8);
+                // EK RENKLER: Çevrede patlamalar (5-7 renk)
+                const extraColors = colors.slice(1, 8);
                 extraColors.forEach((color, i) => {
                     setTimeout(() => {
                         const angle = (i / extraColors.length) * Math.PI * 2;
@@ -199,44 +174,7 @@
             }
         });
 
-        // 🎨 EN BELİRGİN RENKLERİ SEÇ - ULTRA AKILLI
-        function selectMostVibrantColors(colors, count) {
-            return colors
-                .map(color => {
-                    // Her renk için "canlılık skoru" hesapla
-                    const r = color.r;
-                    const g = color.g;
-                    const b = color.b;
-                    
-                    // 1. Saturation (doygunluk)
-                    const max = Math.max(r, g, b);
-                    const min = Math.min(r, g, b);
-                    const saturation = max === 0 ? 0 : (max - min) / max;
-                    
-                    // 2. Brightness (parlaklık)
-                    const brightness = (r + g + b) / 3;
-                    
-                    // 3. Contrast (kontrast)
-                    const contrast = max - min;
-                    
-                    // 4. Renk farkı (gri olmayan renkler daha yüksek skor)
-                    const colorDiff = Math.abs(r - g) + Math.abs(g - b) + Math.abs(b - r);
-                    
-                    // TOPLAM SKOR: En canlı renkler en yüksek skoru alır
-                    const vibrancyScore = 
-                        (saturation * 3) +          // Saturation en önemli
-                        (brightness / 255 * 2) +    // Parlaklık önemli
-                        (contrast / 255 * 2) +      // Kontrast önemli
-                        (colorDiff / 765 * 2);      // Renk farkı önemli
-                    
-                    return { color, vibrancyScore };
-                })
-                .sort((a, b) => b.vibrancyScore - a.vibrancyScore) // En yüksekten düşüğe
-                .slice(0, count) // İlk 10'u al
-                .map(item => item.color);
-        }
-
-        // PNG rengini Cables'e gönder - ULTRA BELİRGİN + AGRESİF
+        // PNG rengini Cables'e gönder - ULTRA BELİRGİN
         function applyPianoColor(color) {
             if (!patchReady || typeof CABLES === 'undefined' || !CABLES.patch) {
                 return;
@@ -283,7 +221,7 @@
             // TÜM YÖNTEMLERİ DENE
             try {
                 CABLES.patch.setVariable('SplatColor', normalizedColor);
-                console.log('✅ Ultra Renk:', Math.round(r), Math.round(g), Math.round(b));
+                console.log('✅ Renk:', Math.round(r), Math.round(g), Math.round(b));
             } catch(e) {}
 
             try {
