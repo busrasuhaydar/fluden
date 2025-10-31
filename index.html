@@ -78,6 +78,8 @@
         // Canvas tam ekran - AGRESIF
         function resizeCanvas() {
             const canvas = document.getElementById('glcanvas');
+            if (!canvas) return;
+            
             const w = window.innerWidth;
             const h = window.innerHeight;
             
@@ -92,12 +94,7 @@
                 display: block !important;
             `;
             
-            console.log('📐 Canvas FORCED:', w, 'x', h);
-            
-            // Cables'e resize event gönder
-            if (typeof CABLES !== 'undefined' && CABLES.patch) {
-                window.dispatchEvent(new Event('resize'));
-            }
+            console.log('📐 Canvas:', w, 'x', h);
         }
 
         window.addEventListener('resize', resizeCanvas);
@@ -121,9 +118,9 @@
                 // İlk rengi kullan
                 const color = colors[0];
                 
-                console.log('🎨', key.toUpperCase(), '→', `rgb(${color.r},${color.g},${color.b})`);
+                console.log('🎹', key.toUpperCase(), '→', `rgb(${color.r},${color.g},${color.b})`);
                 
-                // SplatColor'ı güncelle - ARRAY formatında [R, G, B] 0-1 normalize
+                // SplatColor'ı güncelle
                 if (fluidPatch) {
                     const normalizedColor = [
                         color.r / 255,
@@ -131,64 +128,71 @@
                         color.b / 255
                     ];
                     
-                    fluidPatch.setVariable('SplatColor', normalizedColor);
+                    try {
+                        fluidPatch.setVariable('SplatColor', normalizedColor);
+                    } catch(e) {
+                        console.warn('SplatColor set failed:', e);
+                    }
                     
-                    // Mouse pozisyonunu ayarla (0-1 normalize)
+                    // Mouse pozisyonu (0-1 normalize, Y ters)
                     const normalizedX = x / window.innerWidth;
-                    const normalizedY = 1.0 - (y / window.innerHeight); // Y'yi ters çevir
+                    const normalizedY = 1.0 - (y / window.innerHeight);
                     
-                    fluidPatch.setVariable('MousePosX', normalizedX);
-                    fluidPatch.setVariable('MousePosY', normalizedY);
-                    
-                    // Mouse force ve drag
-                    fluidPatch.setVariable('MouseSplatForce', 8000); // Güçlü efekt
-                    fluidPatch.setVariable('SplatRadius', 0.25);
-                    fluidPatch.setVariable('MouseIsDragged', 1);
-                    fluidPatch.setVariable('mouseButtonDown', 1);
-                    
-                    console.log('✅ Fluid tetiklendi:', normalizedX.toFixed(2), normalizedY.toFixed(2));
-                    
-                    // Spiral hareket - DAHA GÜÇLÜ
-                    createSpiralEffect(normalizedX, normalizedY, normalizedColor);
-                    
-                    // Mouse up
-                    setTimeout(() => {
-                        if (fluidPatch) {
-                            fluidPatch.setVariable('MouseIsDragged', 0);
-                            fluidPatch.setVariable('mouseButtonDown', 0);
-                        }
-                    }, 500);
+                    // Mouse drag başlat
+                    startMouseDrag(normalizedX, normalizedY, normalizedColor);
                 }
             }
         });
 
-        // Spiral efekt oluştur - GÜÇLÜ
-        function createSpiralEffect(startX, startY, color) {
+        // Mouse drag simülasyonu - ORİJİNAL GİBİ
+        function startMouseDrag(startX, startY, color) {
+            if (!fluidPatch) return;
+            
+            // Başlangıç
+            fluidPatch.setVariable('MousePosX', startX);
+            fluidPatch.setVariable('MousePosY', startY);
+            fluidPatch.setVariable('mouseButtonDown', 1);
+            fluidPatch.setVariable('MouseIsDragged', 1);
+            
+            // Drag pozisyonları
+            fluidPatch.setVariable('MouseDragX', startX);
+            fluidPatch.setVariable('MouseDragY', startY);
+            
+            console.log('🖱️ Mouse drag:', startX.toFixed(2), startY.toFixed(2));
+            
+            // Spiral hareket
             let angle = 0;
             let radius = 0;
             let step = 0;
-            const maxSteps = 30;
+            const maxSteps = 35;
             
-            const spiralInterval = setInterval(() => {
-                angle += 0.6;
-                radius += 0.012;
+            const dragInterval = setInterval(() => {
+                angle += 0.7;
+                radius += 0.018;
                 
-                const x = startX + Math.cos(angle) * radius;
-                const y = startY + Math.sin(angle) * radius;
+                const newX = Math.max(0, Math.min(1, startX + Math.cos(angle) * radius));
+                const newY = Math.max(0, Math.min(1, startY + Math.sin(angle) * radius));
                 
                 if (fluidPatch) {
-                    fluidPatch.setVariable('MousePosX', Math.max(0, Math.min(1, x)));
-                    fluidPatch.setVariable('MousePosY', Math.max(0, Math.min(1, y)));
+                    fluidPatch.setVariable('MousePosX', newX);
+                    fluidPatch.setVariable('MousePosY', newY);
+                    fluidPatch.setVariable('MouseDragX', newX);
+                    fluidPatch.setVariable('MouseDragY', newY);
                     fluidPatch.setVariable('SplatColor', color);
-                    fluidPatch.setVariable('MouseSplatForce', 8000);
                     fluidPatch.setVariable('MouseIsDragged', 1);
                 }
                 
                 step++;
-                if (step > maxSteps) {
-                    clearInterval(spiralInterval);
+                if (step >= maxSteps) {
+                    clearInterval(dragInterval);
+                    
+                    // Drag bitir
+                    if (fluidPatch) {
+                        fluidPatch.setVariable('mouseButtonDown', 0);
+                        fluidPatch.setVariable('MouseIsDragged', 0);
+                    }
                 }
-            }, 20);
+            }, 18);
         }
 
         document.addEventListener("CABLES.jsLoaded", function (event)
