@@ -32,9 +32,16 @@
             position: fixed !important;
             top: 0 !important;
             left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            min-width: 100vw !important;
+            min-height: 100vh !important;
+            outline: 0;
+        }
+        
+        #glcanvas {
             width: 100vw !important;
             height: 100vh !important;
-            outline: 0;
         }
 
         /* FPS/CPU yazılarını gizle */
@@ -52,7 +59,7 @@
     <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1">
 </head>
 <body>
-    <canvas id="glcanvas" tabindex="1"></canvas>
+    <canvas id="glcanvas" tabindex="1" style="width:100vw;height:100vh;"></canvas>
 
     <script type="text/javascript" src="js/patch.js" async></script>
 
@@ -230,6 +237,11 @@
         }
 
         document.addEventListener("CABLES.jsLoaded", function (event) {
+            // Canvas boyutlarını zorla ayarla
+            const canvas = document.getElementById('glcanvas');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
             CABLES.patch = new CABLES.Patch({
                 patch: CABLES.exportedPatch,
                 "prefixAssetPath": "",
@@ -244,6 +256,12 @@
             });
             
             hideStatsPanels();
+            
+            // Pencere boyutu değişince yeniden ayarla
+            window.addEventListener('resize', () => {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            });
         });
 
         document.getElementById('glcanvas').addEventListener('touchmove', (e)=>{ e.preventDefault(); }, false);
