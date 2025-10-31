@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Piano Fluid - FINAL SOLUTION</title>
+    <title>busfluid</title>
     <style>
         * {
             margin: 0;
@@ -10,8 +10,8 @@
         }
 
         html, body {
-            width: 100vw !important;
-            height: 100vh !important;
+            width: 100vw;
+            height: 100vh;
             background-color: #000;
             overflow: hidden;
             position: fixed;
@@ -27,27 +27,23 @@
             width: 100vw !important;
             height: 100vh !important;
             outline: 0;
-            z-index: 1;
         }
 
-        /* HİÇBİR YAZI GÖRÜNMESIN */
-        div:not(#root), span, p, h1, h2, h3, h4, h5, h6, a, label, button,
-        [class*="fps"], [class*="cpu"], [class*="gpu"], [class*="info"],
-        [class*="cables"], [id*="stats"], [id*="info"] {
+        /* HİÇBİR YAZI YOK */
+        div, span, p, h1, h2, h3, h4, h5, h6,
+        [class*="fps"], [class*="cpu"], [class*="gpu"],
+        [class*="cables"], [id*="stats"] {
             display: none !important;
             visibility: hidden !important;
-            opacity: 0 !important;
-            pointer-events: none !important;
         }
 
         * {
             -webkit-tap-highlight-color: transparent;
             -webkit-touch-callout: none;
             -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
             user-select: none;
         }
+
     </style>
 
     <meta charset="utf-8">
@@ -60,51 +56,33 @@
 
     <script type="text/javascript">
 
-        let patchReady = false;
-
         function showError(initiator,...args) {
             // Silent
         }
 
         function patchInitialized(patch) {
-            patchReady = true;
-            console.log('✅ Cables patch hazır!');
-            
-            // FORCE FULLSCREEN
             forceFullscreen();
-            
-            // HİÇBİR YAZI GÖRÜNMESIN
             hideAllText();
-            setInterval(hideAllText, 100); // Her 100ms kontrol et
-            
-            // Test: SplatColor variable'ı var mı?
-            setTimeout(() => {
-                try {
-                    const testColor = patch.getVariable('SplatColor');
-                    console.log('📋 SplatColor hazır');
-                } catch(e) {
-                    console.warn('⚠️ SplatColor variable bulunamadı!');
-                }
-            }, 1000);
+            setInterval(hideAllText, 200);
+            console.log('✅ Fluid hazır!');
+        }
+
+        function patchFinishedLoading(patch) {
+            forceFullscreen();
         }
 
         function forceFullscreen() {
             const canvas = document.getElementById('glcanvas');
             if (!canvas) return;
             
-            const w = window.innerWidth;
-            const h = window.innerHeight;
-            
-            canvas.width = w;
-            canvas.height = h;
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
             canvas.style.cssText = `
                 position: fixed !important;
                 top: 0 !important;
                 left: 0 !important;
-                width: ${w}px !important;
-                height: ${h}px !important;
-                display: block !important;
-                z-index: 1 !important;
+                width: 100vw !important;
+                height: 100vh !important;
             `;
             
             document.body.style.cssText = `
@@ -112,188 +90,132 @@
                 height: 100vh !important;
                 overflow: hidden !important;
                 position: fixed !important;
-                top: 0 !important;
-                left: 0 !important;
             `;
         }
 
         function hideAllText() {
-            // TÜM text elementlerini gizle
-            document.querySelectorAll('div, span, p, h1, h2, h3, h4, h5, h6, a, label, button').forEach(el => {
-                if (el.id !== 'root' && el.tagName.toLowerCase() !== 'canvas') {
+            document.querySelectorAll('div, span, p, h1, h2, h3, h4, h5, h6').forEach(el => {
+                if (el.tagName.toLowerCase() !== 'canvas') {
                     el.style.display = 'none';
-                    el.style.visibility = 'hidden';
-                    el.style.opacity = '0';
                 }
             });
         }
 
         window.addEventListener('resize', forceFullscreen);
-        window.addEventListener('load', () => {
-            forceFullscreen();
-            hideAllText();
-            setTimeout(forceFullscreen, 100);
-            setTimeout(forceFullscreen, 500);
-        });
+        window.addEventListener('load', forceFullscreen);
 
-        function patchFinishedLoading(patch) {
-            console.log('🎨 Fluid yüklendi!');
-        }
-
-        // 🎹 PİYANO MESAJ SİSTEMİ - ULTRA RENKLI + RANDOM POZİSYON!
+        // 🎹 PİYANO MESAJ SİSTEMİ
         window.addEventListener('message', (event) => {
             if (event.data.type === 'pianoKeyPress') {
                 const colors = event.data.colors || [];
                 const key = event.data.key;
                 
-                // RANDOM POZİSYON - Her tuş farklı yerde başlıyor!
-                const x = Math.random() * window.innerWidth;
-                const y = Math.random() * window.innerHeight;
-                
                 if (colors.length === 0) return;
                 
-                console.log('🎹', key.toUpperCase(), '→', colors.length, 'renk!');
+                // RANDOM POZİSYON - Her tuş farklı yerde
+                const x = 50 + Math.random() * (window.innerWidth - 100);
+                const y = 50 + Math.random() * (window.innerHeight - 100);
                 
-                // ANA RENK: Merkez spiral
-                applyPianoColor(colors[0]);
-                simulatePianoInput(x, y);
+                console.log('🎹', key.toUpperCase(), '→', colors.length, 'renk');
                 
-                // EK RENKLER: Çevrede patlamalar (5-7 renk)
-                const extraColors = colors.slice(1, 8);
-                extraColors.forEach((color, i) => {
-                    setTimeout(() => {
-                        const angle = (i / extraColors.length) * Math.PI * 2;
-                        const dist = 80 + Math.random() * 40;
-                        const newX = x + Math.cos(angle) * dist;
-                        const newY = y + Math.sin(angle) * dist;
-                        
-                        applyPianoColor(color);
-                        simulatePianoInput(newX, newY);
-                    }, (i + 1) * 100);
-                });
+                // Rengi set et - DAHA BELİRGİN
+                const color = colors[0];
+                setPianoColor(color);
+                
+                // Mouse simülasyonu
+                createPianoSpiral(x, y);
             }
         });
 
-        // PNG rengini Cables'e gönder - TÜM YÖNTEMLER + ULTRA BELİRGİN
-        function applyPianoColor(color) {
-            if (!patchReady || typeof CABLES === 'undefined' || !CABLES.patch) {
-                return;
-            }
-
-            // RENK BELİRGİNLEŞTİRME - AGGRESSIVE
+        function setPianoColor(color) {
+            if (typeof CABLES === 'undefined' || !CABLES.patch) return;
+            
+            // RENK BELİRGİNLEŞTİRME - ULTRA AGGRESSIVE
             let r = color.r;
             let g = color.g;
             let b = color.b;
             
-            // 1. Brightness normalize
+            // 1. Koyu renkleri aydınlat
             const brightness = (r + g + b) / 3;
-            if (brightness < 100) {
-                // Koyu renkleri aydınlat
-                const factor = 100 / brightness;
+            if (brightness < 120) {
+                const factor = 120 / Math.max(brightness, 1);
                 r = Math.min(255, r * factor);
                 g = Math.min(255, g * factor);
                 b = Math.min(255, b * factor);
             }
             
-            // 2. Saturation boost - ULTRA
+            // 2. Saturation boost - MAXIMUM
             const max = Math.max(r, g, b);
-            const min = Math.min(r, g, b);
             const avg = (r + g + b) / 3;
             
             if (max > 0) {
-                const boost = 1.6; // Daha agresif
+                const boost = 1.8; // Maksimum boost
                 r = Math.min(255, Math.max(0, avg + (r - avg) * boost));
                 g = Math.min(255, Math.max(0, avg + (g - avg) * boost));
                 b = Math.min(255, Math.max(0, avg + (b - avg) * boost));
             }
-
-            const normalizedColor = [
-                r / 255,
-                g / 255,
-                b / 255
-            ];
-
-            // TÜM YÖNTEMLER DENENİYOR
-            try {
-                CABLES.patch.setVariable('SplatColor', normalizedColor);
-                console.log('✅ Renk:', Math.round(r), Math.round(g), Math.round(b));
-            } catch(e) {}
-
-            try {
-                CABLES.patch.setVariable('pianoColorR', normalizedColor[0]);
-                CABLES.patch.setVariable('pianoColorG', normalizedColor[1]);
-                CABLES.patch.setVariable('pianoColorB', normalizedColor[2]);
-            } catch(e) {}
-
-            try {
-                CABLES.patch.setVariable('colorR', normalizedColor[0]);
-                CABLES.patch.setVariable('colorG', normalizedColor[1]);
-                CABLES.patch.setVariable('colorB', normalizedColor[2]);
-            } catch(e) {}
+            
+            // 3. Minimum parlaklık garantisi
+            const finalBrightness = (r + g + b) / 3;
+            if (finalBrightness < 100) {
+                const addBrightness = (100 - finalBrightness) / 3;
+                r = Math.min(255, r + addBrightness);
+                g = Math.min(255, g + addBrightness);
+                b = Math.min(255, b + addBrightness);
+            }
             
             try {
-                CABLES.patch.setVariable('color', normalizedColor);
+                CABLES.patch.setVariable('SplatColor', [r/255, g/255, b/255]);
+                console.log('✅ Renk:', Math.round(r), Math.round(g), Math.round(b));
             } catch(e) {}
         }
 
-        // Mouse simülasyonu - SPIRAL HAREKET
-        function simulatePianoInput(startX, startY) {
+        function createPianoSpiral(startX, startY) {
             const canvas = document.getElementById('glcanvas');
-            if (!canvas) {
-                console.warn('⚠️ Canvas bulunamadı!');
-                return;
-            }
-
+            if (!canvas) return;
+            
             // Mouse down
             canvas.dispatchEvent(new MouseEvent('mousedown', {
                 clientX: startX,
                 clientY: startY,
                 button: 0,
                 buttons: 1,
-                bubbles: true,
-                cancelable: true
+                bubbles: true
             }));
-
-            console.log('🖱️ Mouse down:', startX, startY);
-
-            // Spiral hareket
+            
             let angle = 0;
             let radius = 0;
             let step = 0;
             const maxSteps = 35;
-
-            const spiralInterval = setInterval(() => {
-                angle += 0.65;
+            
+            const interval = setInterval(() => {
+                angle += 0.6;
                 radius += 3.5;
-
+                
                 const x = startX + Math.cos(angle) * radius;
                 const y = startY + Math.sin(angle) * radius;
-
+                
                 // Mouse move
                 canvas.dispatchEvent(new MouseEvent('mousemove', {
                     clientX: x,
                     clientY: y,
                     button: 0,
                     buttons: 1,
-                    bubbles: true,
-                    cancelable: true
+                    bubbles: true
                 }));
-
+                
                 step++;
-                if (step >= maxSteps || radius > 200) {
-                    clearInterval(spiralInterval);
-
+                if (step >= maxSteps) {
+                    clearInterval(interval);
+                    
                     // Mouse up
                     canvas.dispatchEvent(new MouseEvent('mouseup', {
                         clientX: x,
                         clientY: y,
                         button: 0,
                         buttons: 0,
-                        bubbles: true,
-                        cancelable: true
+                        bubbles: true
                     }));
-
-                    console.log('✅ Spiral tamamlandı');
                 }
             }, 16);
         }
