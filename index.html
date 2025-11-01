@@ -119,7 +119,7 @@
             }, 100);
         }
 
-        // 🎨 EN DOMINANT VE CANLI RENKLERİ SEÇ
+        // 🎨 PNG'DEN EN BASKIN VE CANLI RENKLERİ ÇOK DİKKATLİ SEÇ
         function selectBestColors(colors) {
             if (!colors || colors.length === 0) {
                 return [
@@ -129,66 +129,138 @@
                 ];
             }
 
-            // Renkleri grupla ve en yaygın olanları bul
-            const colorMap = new Map();
-            
-            colors.forEach(c => {
-                // Quantize colors to reduce similar colors
-                const qr = Math.round(c.r / 30) * 30;
-                const qg = Math.round(c.g / 30) * 30;
-                const qb = Math.round(c.b / 30) * 30;
-                const key = `${qr},${qg},${qb}`;
-                
+            // 1. ADIM: Çok soluk ve çok koyu renkleri filtrele
+            const validColors = colors.filter(c => {
                 const brightness = (c.r + c.g + c.b) / 3;
                 const saturation = Math.max(c.r, c.g, c.b) - Math.min(c.r, c.g, c.b);
                 
-                // Sadece canlı, orta parlaklıkta renkler
-                if (brightness > 60 && brightness < 200 && saturation > 50) {
-                    if (!colorMap.has(key)) {
-                        colorMap.set(key, { color: c, count: 0, saturation });
-                    }
-                    colorMap.get(key).count++;
-                }
+                // Orta parlaklık ve yüksek saturation
+                return brightness > 70 && brightness < 190 && saturation > 60;
             });
 
-            // En yaygın ve en doygun renkleri al
-            const sortedColors = Array.from(colorMap.values())
-                .sort((a, b) => {
-                    // Önce count'a göre, sonra saturation'a göre
-                    const countDiff = b.count - a.count;
-                    if (Math.abs(countDiff) > 5) return countDiff;
-                    return b.saturation - a.saturation;
-                })
-                .slice(0, 5) // En fazla 5 ana renk
-                .map(item => {
-                    // Renkleri biraz boost et (vibrant tut)
-                    const c = item.color;
-                    const max = Math.max(c.r, c.g, c.b);
-                    const boost = 1.15; // %15 daha vibrant
-                    
-                    return {
-                        r: Math.min(255, Math.round(c.r * boost)),
-                        g: Math.min(255, Math.round(c.g * boost)),
-                        b: Math.min(255, Math.round(c.b * boost))
-                    };
-                });
-
-            if (sortedColors.length === 0) {
-                // Fallback - en doygun renkleri al
-                return colors
-                    .filter(c => {
-                        const sat = Math.max(c.r, c.g, c.b) - Math.min(c.r, c.g, c.b);
-                        return sat > 40;
-                    })
-                    .sort((a, b) => {
-                        const satA = Math.max(a.r, a.g, a.b) - Math.min(a.r, a.g, a.b);
-                        const satB = Math.max(b.r, b.g, b.b) - Math.min(b.r, b.g, b.b);
-                        return satB - satA;
-                    })
-                    .slice(0, 5);
+            if (validColors.length === 0) {
+                // Fallback: sadece saturation'a bak
+                const fallback = colors.filter(c => {
+                    const sat = Math.max(c.r, c.g, c.b) - Math.min(c.r, c.g, c.b);
+                    return sat > 50;
+                }).slice(0, 3);
+                
+                return fallback.map(c => makeVibrant(c));
             }
 
-            return sortedColors;
+            // 2. ADIM: Renkleri HSL'ye çevir ve grupla
+            const colorGroups = new Map();
+            
+            validColors.forEach(c => {
+                const hsl = rgbToHsl(c.r, c.g, c.b);
+                // Hue'ya göre grupla (30 derecelik aralıklar)
+                const hueGroup = Math.round(hsl.h / 30) * 30;
+                const key = `${hueGroup}`;
+                
+                if (!colorGroups.has(key)) {
+                    colorGroups.set(key, []);
+                }
+                colorGroups.get(key).push({ color: c, hsl: hsl });
+            });
+
+            // 3. ADIM: Her gruptan EN BASKIN rengi al
+            const dominantColors = [];
+            
+            for (const [hueGroup, groupColors] of colorGroups.entries()) {
+                // Grup içinde en doygun ve en parlak olanı seç
+                const best = groupColors.sort((a, b) => {
+                    const scoreA = a.hsl.s * 0.7 + a.hsl.l * 0.3;
+                    const scoreB = b.hsl.s * 0.7 + b.hsl.l * 0.3;
+                    return scoreB - scoreA;
+                })[0];
+                
+                dominantColors.push({
+                    color: best.color,
+                    hsl: best.hsl,
+                    count: groupColors.length // Kaç piksel var bu renkte
+                });
+            }
+
+            // 4. ADIM: En yaygın 3-5 rengi al
+            const finalColors = dominantColors
+                .sort((a, b) => b.count - a.count) // En yaygın olanlar önce
+                .slice(0, 4) // En fazla 4 renk
+                .map(item => makeVibrant(item.color)); // Hepsini vibrant yap
+
+            console.log(`🎨 ${finalColors.length} baskın renk seçildi`);
+            return finalColors;
+        }
+
+        // RGB'yi HSL'ye çevir
+        function rgbToHsl(r, g, b) {
+            r /= 255; g /= 255; b /= 255;
+            
+            const max = Math.max(r, g, b);
+            const min = Math.min(r, g, b);
+            let h, s, l = (max + min) / 2;
+
+            if (max === min) {
+                h = s = 0;
+            } else {
+                const d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                
+                switch (max) {
+                    case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+                    case g: h = ((b - r) / d + 2) / 6; break;
+                    case b: h = ((r - g) / d + 4) / 6; break;
+                }
+            }
+
+            return { h: h * 360, s: s, l: l };
+        }
+
+        // Rengi SÜREKLI VİBRANT tut
+        function makeVibrant(color) {
+            const hsl = rgbToHsl(color.r, color.g, color.b);
+            
+            // Saturation'ı maksimuma çek (0.9+)
+            hsl.s = Math.max(0.85, hsl.s);
+            
+            // Lightness'ı ideal aralığa getir (0.45-0.55)
+            if (hsl.l < 0.45) hsl.l = 0.45;
+            if (hsl.l > 0.55) hsl.l = 0.55;
+            
+            // HSL'yi tekrar RGB'ye çevir
+            return hslToRgb(hsl.h, hsl.s, hsl.l);
+        }
+
+        // HSL'yi RGB'ye çevir
+        function hslToRgb(h, s, l) {
+            h /= 360;
+            
+            let r, g, b;
+
+            if (s === 0) {
+                r = g = b = l;
+            } else {
+                const hue2rgb = (p, q, t) => {
+                    if (t < 0) t += 1;
+                    if (t > 1) t -= 1;
+                    if (t < 1/6) return p + (q - p) * 6 * t;
+                    if (t < 1/2) return q;
+                    if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                    return p;
+                };
+
+                const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                const p = 2 * l - q;
+                
+                r = hue2rgb(p, q, h + 1/3);
+                g = hue2rgb(p, q, h);
+                b = hue2rgb(p, q, h - 1/3);
+            }
+
+            return {
+                r: Math.round(r * 255),
+                g: Math.round(g * 255),
+                b: Math.round(b * 255)
+            };
         }
 
         // 🌊 HAREKET PATTERNLERİ
@@ -215,7 +287,6 @@
                 
                 console.log(`🎹 ${key.toUpperCase()} → ${bestColors.length} dominant colors`);
                 
-                // 1 fluid (temiz ve net)
                 const pattern = FLOW_PATTERNS[Math.floor(Math.random() * FLOW_PATTERNS.length)];
                 
                 const startX = Math.random() * 0.3 * parentWidth + 0.35 * parentWidth;
@@ -229,25 +300,31 @@
             if (typeof CABLES === 'undefined' || !CABLES.patch) return;
             
             try {
+                // Rengi VIBRANT tut
+                const vibrantColor = makeVibrant(color);
+                
                 const normalizedColor = [
-                    color.r / 255,
-                    color.g / 255,
-                    color.b / 255
+                    vibrantColor.r / 255,
+                    vibrantColor.g / 255,
+                    vibrantColor.b / 255
                 ];
                 CABLES.patch.setVariable('SplatColor', normalizedColor);
             } catch(e) {}
         }
 
-        // 🎨 RENK BLENDING
+        // 🎨 RENK BLENDING - VİBRANT KAL
         function blendColors(color1, color2, ratio) {
-            return {
+            const blended = {
                 r: Math.round(color1.r * (1 - ratio) + color2.r * ratio),
                 g: Math.round(color1.g * (1 - ratio) + color2.g * ratio),
                 b: Math.round(color1.b * (1 - ratio) + color2.b * ratio)
             };
+            
+            // Blend edilmiş rengi de vibrant yap
+            return makeVibrant(blended);
         }
 
-        // 🌊 FLUID AKIŞI - FIXED DURATION: 3.5 SANİYE
+        // 🌊 FLUID AKIŞI - YUMUŞAK BAŞLANGIÇ
         function createFluidFlow(startX, startY, colors, pattern) {
             const canvas = document.getElementById('glcanvas');
             if (!canvas) return;
@@ -257,7 +334,7 @@
             
             // SABİT SÜRE: 200 frame × 18ms = 3.6 saniye
             const TOTAL_FRAMES = 200;
-            const FRAME_DURATION = 18; // ms
+            const FRAME_DURATION = 18;
             
             let frameIndex = 0;
             
@@ -267,15 +344,15 @@
             // İlk rengi set et
             setPianoColor(colors[0]);
             
-            // BAŞLANGIÇ POZİSYONU - patlamayı önlemek için
-            // İlk 15 frame'i atla, oradan başla
-            const startFrame = Math.min(15, Math.floor(basePath.length * 0.1));
+            // ÇÖZÜM: İlk mousedown'ı path'in daha ilerisinde yap
+            // İlk %20'sini atla - böylece patlama olmaz
+            const startFrame = Math.floor(basePath.length * 0.2);
             let currentX = basePath[startFrame].x;
             let currentY = basePath[startFrame].y;
             
-            console.log(`🎨 Fluid başlıyor: ${TOTAL_FRAMES} frame, ${colors.length} renk`);
+            console.log(`🎨 Fluid başlıyor: frame ${startFrame}/${TOTAL_FRAMES}, ${colors.length} renk`);
             
-            // MOUSEDOWN - başlangıç
+            // MOUSEDOWN - ama uzak bir noktadan
             canvas.dispatchEvent(new MouseEvent('mousedown', {
                 clientX: currentX,
                 clientY: currentY,
@@ -284,17 +361,16 @@
                 bubbles: true
             }));
             
-            // İlk harekete başlamadan önce kısa bekle
+            // Hemen hareket başlat - ama yumuşak
             setTimeout(() => {
-                // ANA ANİMASYON LOOP
+                // ANA ANİMASYON
                 const animationInterval = setInterval(() => {
                     frameIndex++;
                     
-                    // Bitmiş mi kontrol et
                     if (frameIndex >= TOTAL_FRAMES - startFrame) {
                         clearInterval(animationInterval);
                         
-                        // MOUSEUP - bitir
+                        // MOUSEUP
                         canvas.dispatchEvent(new MouseEvent('mouseup', {
                             clientX: currentX,
                             clientY: currentY,
@@ -309,7 +385,7 @@
                     
                     const actualFrame = frameIndex + startFrame;
                     
-                    // RENK BLENDING - smooth geçiş
+                    // RENK BLENDING - smooth ve vibrant
                     const progress = frameIndex / (TOTAL_FRAMES - startFrame);
                     const colorProgress = progress * (colors.length - 1);
                     const colorIndex = Math.floor(colorProgress);
@@ -331,7 +407,6 @@
                         currentX = basePath[actualFrame].x;
                         currentY = basePath[actualFrame].y;
                         
-                        // Sınır kontrolü
                         currentX = Math.max(20, Math.min(width - 20, currentX));
                         currentY = Math.max(20, Math.min(height - 20, currentY));
                         
@@ -346,14 +421,13 @@
                     }
                     
                 }, FRAME_DURATION);
-            }, 60); // Smooth başlangıç için 60ms bekle
+            }, 40); // Daha kısa bekleme - ama yeterli smooth başlangıç için
         }
 
-        // 🎨 BASE PATH GENERATOR - SPLİNE OLMADAN (süre kontrolü için)
+        // 🎨 PATH GENERATOR
         function generateBasePath(startX, startY, pattern, width, height, pointCount) {
             const points = [];
             
-            // Perlin-like noise
             const noiseOffsetX = Math.random() * 1000;
             const noiseOffsetY = Math.random() * 1000;
             
@@ -361,7 +435,6 @@
                 const t = i / pointCount;
                 let x, y;
                 
-                // Organic noise - hafif
                 const noiseScale = 0.025;
                 const noiseX = (Math.sin(i * noiseScale + noiseOffsetX) + 
                                Math.sin(i * noiseScale * 2.3 + noiseOffsetX * 1.4)) * 10;
