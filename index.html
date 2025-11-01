@@ -1,304 +1,541 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Piano Fluid - FINAL SOLUTION</title>
+    <title>Piano Fluid - Living Art</title>
     <style>
         * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html, body {
-            width: 100vw !important;
-            height: 100vh !important;
-            background-color: #000;
-            overflow: hidden;
-            position: fixed;
-            top: 0;
-            left: 0;
-        }
-
-        canvas {
-            display: block;
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100vw !important;
-            height: 100vh !important;
-            outline: 0;
-            z-index: 1;
-        }
-
-        /* HİÇBİR YAZI GÖRÜNMESIN */
-        div:not(#root), span, p, h1, h2, h3, h4, h5, h6, a, label, button,
-        [class*="fps"], [class*="cpu"], [class*="gpu"], [class*="info"],
-        [class*="cables"], [id*="stats"], [id*="info"] {
-            display: none !important;
-            visibility: hidden !important;
-            opacity: 0 !important;
-            pointer-events: none !important;
-        }
-
-        * {
+            margin: 0 !important;
+            padding: 0 !important;
             -webkit-tap-highlight-color: transparent;
             -webkit-touch-callout: none;
             -webkit-user-select: none;
             -moz-user-select: none;
             -ms-user-select: none;
             user-select: none;
+            box-sizing: border-box !important;
         }
+
+        html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: transparent !important;
+            color: #fff;
+            font-family: Helvetica, Arial, sans-serif;
+            position: relative;
+        }
+
+        #glcanvas {
+            display: block !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            outline: 0 !important;
+            transform: none !important;
+            background: transparent !important;
+        }
+
+        /* FPS/CPU yazılarını gizle */
+        div[style*="position: absolute"],
+        div[style*="fixed"],
+        .cables-stats,
+        .stats-panel {
+            display: none !important;
+            visibility: hidden !important;
+        }
+
     </style>
 
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
 </head>
 <body>
-    <canvas id="glcanvas" width="100vw" height="100vh" tabindex="1"></canvas>
+    <canvas id="glcanvas" tabindex="1"></canvas>
 
     <script type="text/javascript" src="js/patch.js" async></script>
 
     <script type="text/javascript">
 
-        let patchReady = false;
-
         function showError(initiator,...args) {
             // Silent
         }
 
-        function patchInitialized(patch) {
-            patchReady = true;
-            console.log('✅ Cables patch hazır!');
-            
-            // FORCE FULLSCREEN
-            forceFullscreen();
-            
-            // HİÇBİR YAZI GÖRÜNMESIN
-            hideAllText();
-            setInterval(hideAllText, 100); // Her 100ms kontrol et
-            
-            // Test: SplatColor variable'ı var mı?
-            setTimeout(() => {
-                try {
-                    const testColor = patch.getVariable('SplatColor');
-                    console.log('📋 SplatColor hazır');
-                } catch(e) {
-                    console.warn('⚠️ SplatColor variable bulunamadı!');
-                }
-            }, 1000);
+        let parentWidth = window.innerWidth;
+        let parentHeight = window.innerHeight;
+
+        if (window.parent !== window) {
+            try {
+                parentWidth = window.parent.innerWidth;
+                parentHeight = window.parent.innerHeight;
+            } catch(e) {}
         }
 
-        function forceFullscreen() {
+        function forceFullScreenCanvas() {
             const canvas = document.getElementById('glcanvas');
             if (!canvas) return;
             
-            const w = window.innerWidth;
-            const h = window.innerHeight;
+            const width = parentWidth || window.innerWidth || document.documentElement.clientWidth;
+            const height = parentHeight || window.innerHeight || document.documentElement.clientHeight;
             
-            canvas.width = w;
-            canvas.height = h;
-            canvas.style.cssText = `
-                position: fixed !important;
-                top: 0 !important;
-                left: 0 !important;
-                width: ${w}px !important;
-                height: ${h}px !important;
-                display: block !important;
-                z-index: 1 !important;
-            `;
+            canvas.width = width;
+            canvas.height = height;
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+            canvas.style.position = 'absolute';
+            canvas.style.top = '0';
+            canvas.style.left = '0';
             
-            document.body.style.cssText = `
-                width: 100vw !important;
-                height: 100vh !important;
-                overflow: hidden !important;
-                position: fixed !important;
-                top: 0 !important;
-                left: 0 !important;
-            `;
+            console.log('🔧 Canvas boyutu:', width, 'x', height);
         }
 
-        function hideAllText() {
-            // TÜM text elementlerini gizle
-            document.querySelectorAll('div, span, p, h1, h2, h3, h4, h5, h6, a, label, button').forEach(el => {
-                if (el.id !== 'root' && el.tagName.toLowerCase() !== 'canvas') {
-                    el.style.display = 'none';
-                    el.style.visibility = 'hidden';
-                    el.style.opacity = '0';
-                }
-            });
+        function patchInitialized(patch) {
+            console.log('✅ Fluid hazır!');
+            hideStatsPanels();
+            forceFullScreenCanvas();
+            
+            setTimeout(forceFullScreenCanvas, 100);
+            setTimeout(forceFullScreenCanvas, 500);
+            setTimeout(forceFullScreenCanvas, 1000);
+            setTimeout(forceFullScreenCanvas, 2000);
         }
-
-        window.addEventListener('resize', forceFullscreen);
-        window.addEventListener('load', () => {
-            forceFullscreen();
-            hideAllText();
-            setTimeout(forceFullscreen, 100);
-            setTimeout(forceFullscreen, 500);
-        });
 
         function patchFinishedLoading(patch) {
-            console.log('🎨 Fluid yüklendi!');
+            console.log('🎨 Yükleme tamamlandı!');
+            hideStatsPanels();
+            forceFullScreenCanvas();
         }
 
-        // 🎹 PİYANO MESAJ SİSTEMİ - ULTRA RENKLI + RANDOM POZİSYON!
+        function hideStatsPanels() {
+            setTimeout(() => {
+                const statsDivs = document.querySelectorAll('div');
+                statsDivs.forEach(div => {
+                    const style = div.getAttribute('style');
+                    if (style && (style.includes('position: absolute') || style.includes('position: fixed'))) {
+                        div.style.display = 'none';
+                        div.style.visibility = 'hidden';
+                    }
+                });
+            }, 100);
+        }
+
+        // 🎨 EN CANLI ANA RENKLERİ SEÇ
+        function selectBestColors(colors) {
+            if (!colors || colors.length === 0) {
+                return [
+                    {r: 255, g: 100, b: 200},
+                    {r: 100, g: 200, b: 255},
+                    {r: 255, g: 200, b: 100}
+                ];
+            }
+
+            // Sadece en canlı, doygun renkleri al
+            const vibrantColors = colors.filter(c => {
+                const brightness = (c.r + c.g + c.b) / 3;
+                const saturation = Math.max(c.r, c.g, c.b) - Math.min(c.r, c.g, c.b);
+                
+                // Daha agresif filtreleme - SADECE CANLI RENKLER
+                return brightness > 50 && brightness < 220 && saturation > 40;
+            });
+
+            const workingColors = vibrantColors.length > 0 ? vibrantColors : colors;
+
+            // Doygunluğa göre sırala - EN CANLILAR ÖNCELİKLİ
+            const sortedByVibrance = [...workingColors].sort((a, b) => {
+                const satA = Math.max(a.r, a.g, a.b) - Math.min(a.r, a.g, a.b);
+                const satB = Math.max(b.r, b.g, b.b) - Math.min(b.r, b.g, b.b);
+                return satB - satA;
+            });
+
+            // İlk 15 en canlı rengi al
+            return sortedByVibrance.slice(0, 15);
+        }
+
+        // 🌀 YAVAŞ VE YUMUŞAK HAREKET PATERNLERİ - POURING GİBİ
+        const MOVEMENT_PATTERNS = [
+            // Yumuşak spiral hareketler
+            {
+                name: 'gentle_spiral_right',
+                type: 'expanding_spiral',
+                direction: 1,
+                startRadius: 5,
+                endRadius: 100,
+                steps: 250
+            },
+            {
+                name: 'gentle_spiral_left',
+                type: 'expanding_spiral',
+                direction: -1,
+                startRadius: 5,
+                endRadius: 100,
+                steps: 250
+            },
+            // Yavaş daireler
+            {
+                name: 'slow_large_circle',
+                type: 'circle',
+                direction: 1,
+                radius: 120,
+                steps: 280
+            },
+            {
+                name: 'slow_medium_circle',
+                type: 'circle',
+                direction: -1,
+                radius: 80,
+                steps: 260
+            },
+            // Yumuşak dalgalar
+            {
+                name: 'smooth_wave',
+                type: 'sine_wave',
+                direction: 'horizontal',
+                amplitude: 50,
+                frequency: 0.08,
+                speed: 1.2,
+                steps: 270
+            },
+            // Yumuşak organik akış
+            {
+                name: 'organic_pour',
+                type: 'organic',
+                smoothness: 0.85,
+                speed: 1.2,
+                steps: 260
+            },
+            // Yavaş lissajous
+            {
+                name: 'lissajous_smooth',
+                type: 'lissajous',
+                xFreq: 2,
+                yFreq: 3,
+                radius: 90,
+                steps: 300
+            }
+        ];
+
+        // 🎹 PİYANO MESAJ SİSTEMİ - ÇOK RENKLİ FLUIDS!
         window.addEventListener('message', (event) => {
             if (event.data.type === 'pianoKeyPress') {
                 const colors = event.data.colors || [];
                 const key = event.data.key;
                 
-                // RANDOM POZİSYON - Her tuş farklı yerde başlıyor!
-                const x = Math.random() * window.innerWidth;
-                const y = Math.random() * window.innerHeight;
-                
                 if (colors.length === 0) return;
                 
-                console.log('🎹', key.toUpperCase(), '→', colors.length, 'renk!');
+                // En canlı renkleri al
+                const bestColors = selectBestColors(colors);
                 
-                // ANA RENK: Merkez spiral
-                applyPianoColor(colors[0]);
-                simulatePianoInput(x, y);
+                if (bestColors.length === 0) return;
                 
-                // EK RENKLER: Çevrede patlamalar (5-7 renk)
-                const extraColors = colors.slice(1, 8);
-                extraColors.forEach((color, i) => {
+                // 🌈 3-5 FARKLI FLUİD OLUŞTUR!
+                const numFluids = Math.floor(Math.random() * 3) + 3; // 3-5 arası
+                
+                console.log(`🎹 ${key.toUpperCase()} → ${numFluids} multi-color fluid!`);
+                
+                for (let i = 0; i < numFluids; i++) {
+                    // Her fluid için FARKLI hareket paterni
+                    const pattern = MOVEMENT_PATTERNS[Math.floor(Math.random() * MOVEMENT_PATTERNS.length)];
+                    
+                    // Spawn noktasını pattern'e göre belirle
+                    let startX, startY;
+                    if (pattern.type === 'corner_smooth') {
+                        const coords = getCornerCoords(pattern.fromCorner);
+                        startX = coords.x;
+                        startY = coords.y;
+                    } else {
+                        // Random spawn
+                        startX = Math.random() * (parentWidth || window.innerWidth);
+                        startY = Math.random() * (parentHeight || window.innerHeight);
+                    }
+                    
+                    console.log(`  🎨 Fluid ${i+1}: ${bestColors.length} colors - ${pattern.name}`);
+                    
+                    // Kısa gecikme ile fluid oluştur
                     setTimeout(() => {
-                        const angle = (i / extraColors.length) * Math.PI * 2;
-                        const dist = 80 + Math.random() * 40;
-                        const newX = x + Math.cos(angle) * dist;
-                        const newY = y + Math.sin(angle) * dist;
-                        
-                        applyPianoColor(color);
-                        simulatePianoInput(newX, newY);
-                    }, (i + 1) * 100);
-                });
+                        createProfessionalFluid(startX, startY, bestColors, pattern);
+                    }, i * 60);
+                }
             }
         });
 
-        // PNG rengini Cables'e gönder - TÜM YÖNTEMLER + ULTRA BELİRGİN
-        function applyPianoColor(color) {
-            if (!patchReady || typeof CABLES === 'undefined' || !CABLES.patch) {
-                return;
-            }
-
-            // RENK BELİRGİNLEŞTİRME - AGGRESSIVE
-            let r = color.r;
-            let g = color.g;
-            let b = color.b;
+        // Köşe koordinatlarını al
+        function getCornerCoords(corner) {
+            const width = parentWidth || window.innerWidth;
+            const height = parentHeight || window.innerHeight;
             
-            // 1. Brightness normalize
-            const brightness = (r + g + b) / 3;
-            if (brightness < 100) {
-                // Koyu renkleri aydınlat
-                const factor = 100 / brightness;
-                r = Math.min(255, r * factor);
-                g = Math.min(255, g * factor);
-                b = Math.min(255, b * factor);
-            }
-            
-            // 2. Saturation boost - ULTRA
-            const max = Math.max(r, g, b);
-            const min = Math.min(r, g, b);
-            const avg = (r + g + b) / 3;
-            
-            if (max > 0) {
-                const boost = 1.6; // Daha agresif
-                r = Math.min(255, Math.max(0, avg + (r - avg) * boost));
-                g = Math.min(255, Math.max(0, avg + (g - avg) * boost));
-                b = Math.min(255, Math.max(0, avg + (b - avg) * boost));
-            }
+            const corners = {
+                'top-left': { x: 0, y: 0 },
+                'top-right': { x: width, y: 0 },
+                'bottom-left': { x: 0, y: height },
+                'bottom-right': { x: width, y: height }
+            };
+            return corners[corner] || { x: width / 2, y: height / 2 };
+        }
 
-            const normalizedColor = [
-                r / 255,
-                g / 255,
-                b / 255
-            ];
-
-            // TÜM YÖNTEMLER DENENİYOR
+        // PNG rengini Cables SplatColor'a set et
+        function setPianoColor(color) {
+            if (typeof CABLES === 'undefined' || !CABLES.patch) return;
+            
             try {
+                const normalizedColor = [
+                    color.r / 255,
+                    color.g / 255,
+                    color.b / 255
+                ];
                 CABLES.patch.setVariable('SplatColor', normalizedColor);
-                console.log('✅ Renk:', Math.round(r), Math.round(g), Math.round(b));
-            } catch(e) {}
-
-            try {
-                CABLES.patch.setVariable('pianoColorR', normalizedColor[0]);
-                CABLES.patch.setVariable('pianoColorG', normalizedColor[1]);
-                CABLES.patch.setVariable('pianoColorB', normalizedColor[2]);
-            } catch(e) {}
-
-            try {
-                CABLES.patch.setVariable('colorR', normalizedColor[0]);
-                CABLES.patch.setVariable('colorG', normalizedColor[1]);
-                CABLES.patch.setVariable('colorB', normalizedColor[2]);
-            } catch(e) {}
-            
-            try {
-                CABLES.patch.setVariable('color', normalizedColor);
-            } catch(e) {}
-        }
-
-        // Mouse simülasyonu - SPIRAL HAREKET
-        function simulatePianoInput(startX, startY) {
-            const canvas = document.getElementById('glcanvas');
-            if (!canvas) {
-                console.warn('⚠️ Canvas bulunamadı!');
-                return;
+            } catch(e) {
+                console.warn('Renk set hatası');
             }
-
-            // Mouse down
-            canvas.dispatchEvent(new MouseEvent('mousedown', {
-                clientX: startX,
-                clientY: startY,
-                button: 0,
-                buttons: 1,
-                bubbles: true,
-                cancelable: true
-            }));
-
-            console.log('🖱️ Mouse down:', startX, startY);
-
-            // Spiral hareket
-            let angle = 0;
-            let radius = 0;
-            let step = 0;
-            const maxSteps = 35;
-
-            const spiralInterval = setInterval(() => {
-                angle += 0.65;
-                radius += 3.5;
-
-                const x = startX + Math.cos(angle) * radius;
-                const y = startY + Math.sin(angle) * radius;
-
-                // Mouse move
-                canvas.dispatchEvent(new MouseEvent('mousemove', {
-                    clientX: x,
-                    clientY: y,
-                    button: 0,
-                    buttons: 1,
-                    bubbles: true,
-                    cancelable: true
-                }));
-
-                step++;
-                if (step >= maxSteps || radius > 200) {
-                    clearInterval(spiralInterval);
-
-                    // Mouse up
-                    canvas.dispatchEvent(new MouseEvent('mouseup', {
-                        clientX: x,
-                        clientY: y,
-                        button: 0,
-                        buttons: 0,
-                        bubbles: true,
-                        cancelable: true
-                    }));
-
-                    console.log('✅ Spiral tamamlandı');
-                }
-            }, 16);
         }
+
+        // 🌈 PROFESYONEL TOUCH DESIGNER TARZI FLUID - SÜREKLI RENK DEĞİŞİMİ!
+        function createProfessionalFluid(startX, startY, colors, pattern) {
+            const canvas = document.getElementById('glcanvas');
+            if (!canvas) return;
+            
+            const width = parentWidth || window.innerWidth;
+            const height = parentHeight || window.innerHeight;
+            
+            let step = 0;
+            let colorIndex = 0;
+            const maxSteps = pattern.steps;
+            
+            // Perlin noise için değişkenler
+            let noiseOffsetX = Math.random() * 1000;
+            let noiseOffsetY = Math.random() * 1000;
+            
+            // Smooth organic flow için
+            let prevVelX = 0;
+            let prevVelY = 0;
+            
+            // BAŞLANGIÇ POZİSYONU - İLK FRAME'DEN HAREKET BAŞLASIN
+            let currentX = startX;
+            let currentY = startY;
+            
+            // İLK RENK SET ET
+            setPianoColor(colors[0]);
+            
+            // ÖNCE 5-10 ADIM HAREKET BAŞLAT, SONRA MOUSEDOWN
+            let preStartSteps = 0;
+            const maxPreSteps = 8;
+            
+            const preInterval = setInterval(() => {
+                preStartSteps++;
+                
+                // Her adımda yavaşça ilerle
+                const preMove = calculatePosition(startX, startY, preStartSteps, pattern, width, height, noiseOffsetX, noiseOffsetY, prevVelX, prevVelY);
+                currentX = preMove.x;
+                currentY = preMove.y;
+                
+                if (preStartSteps >= maxPreSteps) {
+                    clearInterval(preInterval);
+                    
+                    // ŞİMDİ MOUSEDOWN YAP - artık hareket başlamış durumda
+                    canvas.dispatchEvent(new MouseEvent('mousedown', {
+                        clientX: currentX,
+                        clientY: currentY,
+                        button: 0,
+                        buttons: 1,
+                        bubbles: true
+                    }));
+                    
+                    // Hemen bir hareket daha
+                    setTimeout(() => {
+                        const nextMove = calculatePosition(startX, startY, maxPreSteps + 1, pattern, width, height, noiseOffsetX, noiseOffsetY);
+                        canvas.dispatchEvent(new MouseEvent('mousemove', {
+                            clientX: nextMove.x,
+                            clientY: nextMove.y,
+                            button: 0,
+                            buttons: 1,
+                            bubbles: true
+                        }));
+                        
+                        // Ana loop'u başlat
+                        startMainLoop();
+                    }, 1);
+                }
+            }, 30);
+            
+            function startMainLoop() {
+            
+            function startMainLoop() {
+                // Ana animasyon döngüsü
+                const interval = setInterval(() => {
+                    step++;
+                    
+                    // 🎨 HER 4-5 ADIMDA RENK DEĞİŞTİR (daha yavaş renk geçişi)
+                    if (step % 5 === 0) {
+                        colorIndex = (colorIndex + 1) % colors.length;
+                        setPianoColor(colors[colorIndex]);
+                    }
+                    
+                    // Yeni pozisyon hesapla
+                    const newPos = calculatePosition(startX, startY, step + maxPreSteps, pattern, width, height, noiseOffsetX, noiseOffsetY, prevVelX, prevVelY);
+                    
+                    currentX = newPos.x;
+                    currentY = newPos.y;
+                    prevVelX = newPos.velX || 0;
+                    prevVelY = newPos.velY || 0;
+                    
+                    // Mouse hareket olayı gönder
+                    canvas.dispatchEvent(new MouseEvent('mousemove', {
+                        clientX: currentX,
+                        clientY: currentY,
+                        button: 0,
+                        buttons: 1,
+                        bubbles: true
+                    }));
+                    
+                    if (step >= maxSteps) {
+                        clearInterval(interval);
+                        
+                        canvas.dispatchEvent(new MouseEvent('mouseup', {
+                            clientX: currentX,
+                            clientY: currentY,
+                            button: 0,
+                            buttons: 0,
+                            bubbles: true
+                        }));
+                    }
+                }, 35); // ÇOK DAHA YAVAŞ - pouring gibi
+            }
+        }
+
+        // Pozisyon hesaplama - Tüm pattern tipleri
+        function calculatePosition(startX, startY, step, pattern, width, height, noiseX, noiseY, prevVelX, prevVelY) {
+            let x, y;
+            const progress = step / pattern.steps;
+            
+            switch(pattern.type) {
+                case 'circle':
+                    const angleCircle = (step / pattern.steps) * Math.PI * 2 * pattern.direction;
+                    x = startX + Math.cos(angleCircle) * pattern.radius;
+                    y = startY + Math.sin(angleCircle) * pattern.radius;
+                    break;
+                    
+                case 'expanding_spiral':
+                    const angleExpand = (step / pattern.steps) * Math.PI * 6 * pattern.direction;
+                    const radiusExpand = pattern.startRadius + (pattern.endRadius - pattern.startRadius) * progress;
+                    x = startX + Math.cos(angleExpand) * radiusExpand;
+                    y = startY + Math.sin(angleExpand) * radiusExpand;
+                    break;
+                    
+                case 'contracting_spiral':
+                    const angleContract = (step / pattern.steps) * Math.PI * 6 * pattern.direction;
+                    const radiusContract = pattern.startRadius - (pattern.startRadius - pattern.endRadius) * progress;
+                    x = startX + Math.cos(angleContract) * radiusContract;
+                    y = startY + Math.sin(angleContract) * radiusContract;
+                    break;
+                    
+                case 'sine_wave':
+                    if (pattern.direction === 'horizontal') {
+                        x = startX + step * pattern.speed;
+                        y = startY + Math.sin(step * pattern.frequency) * pattern.amplitude;
+                    } else {
+                        x = startX + Math.sin(step * pattern.frequency) * pattern.amplitude;
+                        y = startY + step * pattern.speed;
+                    }
+                    break;
+                    
+                case 'lissajous':
+                    const t = progress * Math.PI * 2;
+                    x = startX + Math.sin(pattern.xFreq * t) * pattern.radius;
+                    y = startY + Math.sin(pattern.yFreq * t) * pattern.radius;
+                    break;
+                    
+                case 'figure_eight':
+                    const t8 = progress * Math.PI * 2;
+                    x = startX + Math.sin(t8) * pattern.radius;
+                    y = startY + Math.sin(t8 * 2) * pattern.radius * 0.5;
+                    break;
+                    
+                case 'perlin':
+                    // Basit Perlin-like noise simulation
+                    const nx = Math.sin(step * pattern.scale + noiseX) * pattern.amplitude;
+                    const ny = Math.cos(step * pattern.scale + noiseY) * pattern.amplitude;
+                    x = startX + step * pattern.speed + nx;
+                    y = startY + ny;
+                    break;
+                    
+                case 'vortex':
+                    const angleVortex = (progress * Math.PI * 2 * pattern.rotations);
+                    const radiusVortex = pattern.radius * (1 - progress * 0.5);
+                    x = startX + Math.cos(angleVortex) * radiusVortex;
+                    y = startY + Math.sin(angleVortex) * radiusVortex;
+                    break;
+                    
+                case 'zigzag':
+                    const segment = Math.floor(progress * pattern.segments);
+                    const inSegment = (progress * pattern.segments) - segment;
+                    x = startX + step * pattern.speed;
+                    y = startY + (segment % 2 === 0 ? 1 : -1) * pattern.amplitude * inSegment;
+                    break;
+                    
+                case 'star':
+                    const angleStar = (progress * Math.PI * 2 * pattern.points * 2);
+                    const isOuter = Math.floor(progress * pattern.points * 2) % 2 === 0;
+                    const radiusStar = isOuter ? pattern.outerRadius : pattern.innerRadius;
+                    x = startX + Math.cos(angleStar) * radiusStar;
+                    y = startY + Math.sin(angleStar) * radiusStar;
+                    break;
+                    
+                case 'double_helix':
+                    const tHelix = progress * Math.PI * 4;
+                    const xOffset = Math.cos(tHelix) * pattern.radius;
+                    x = startX + xOffset;
+                    y = startY + progress * pattern.height;
+                    break;
+                    
+                case 'corner_smooth':
+                    const targetCorner = getCornerCoords(pattern.toCorner);
+                    const easedProgress = easeInOutCubic(progress);
+                    const dx = targetCorner.x - startX;
+                    const dy = targetCorner.y - startY;
+                    // Bezier curve benzeri smooth geçiş
+                    const curveOffset = Math.sin(progress * Math.PI) * pattern.curvature * Math.max(Math.abs(dx), Math.abs(dy));
+                    x = startX + dx * easedProgress + curveOffset;
+                    y = startY + dy * easedProgress;
+                    break;
+                    
+                case 'organic':
+                    // Smooth organic flow with momentum
+                    const targetVelX = (Math.random() - 0.5) * pattern.speed * 3;
+                    const targetVelY = (Math.random() - 0.5) * pattern.speed * 3;
+                    const velX = prevVelX * pattern.smoothness + targetVelX * (1 - pattern.smoothness);
+                    const velY = prevVelY * pattern.smoothness + targetVelY * (1 - pattern.smoothness);
+                    x = startX + step * pattern.speed + velX * 5;
+                    y = startY + velY * 5;
+                    return { x, y, velX, velY };
+                    
+                default:
+                    x = startX;
+                    y = startY;
+            }
+            
+            return { x, y };
+        }
+
+        // Smooth easing function
+        function easeInOutCubic(t) {
+            return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            forceFullScreenCanvas();
+        });
 
         document.addEventListener("CABLES.jsLoaded", function (event) {
+            forceFullScreenCanvas();
+            
             CABLES.patch = new CABLES.Patch({
                 patch: CABLES.exportedPatch,
                 "prefixAssetPath": "",
@@ -311,9 +548,36 @@
                 "onFinishedLoading": patchFinishedLoading,
                 "canvas": {"alpha":true, "premultipliedAlpha":true }
             });
+            
+            hideStatsPanels();
+            setTimeout(forceFullScreenCanvas, 50);
         });
 
         document.getElementById('glcanvas').addEventListener('touchmove', (e)=>{ e.preventDefault(); }, false);
+        
+        setInterval(hideStatsPanels, 1000);
+        setInterval(forceFullScreenCanvas, 2000);
+        
+        window.addEventListener('resize', () => {
+            try {
+                if (window.parent !== window) {
+                    parentWidth = window.parent.innerWidth;
+                    parentHeight = window.parent.innerHeight;
+                }
+            } catch(e) {
+                parentWidth = window.innerWidth;
+                parentHeight = window.innerHeight;
+            }
+            forceFullScreenCanvas();
+        });
+
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'parentResize') {
+                parentWidth = event.data.width;
+                parentHeight = event.data.height;
+                forceFullScreenCanvas();
+            }
+        });
     </script>
 </body>
 </html>
