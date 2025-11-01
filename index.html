@@ -1,611 +1,610 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Piano Renk Seçici</title>
+    <title>Piano Fluid - Living Art</title>
     <style>
         * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+            margin: 0 !important;
+            padding: 0 !important;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            box-sizing: border-box !important;
+        }
+
+        html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-            display: flex;
-            gap: 20px;
-        }
-
-        .panel {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            padding: 25px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            width: 350px;
-            height: fit-content;
-        }
-
-        .title {
-            font-size: 24px;
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 20px;
-            text-align: center;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .current-key {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            padding: 15px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .current-key-label {
-            font-size: 12px;
-            opacity: 0.9;
-            margin-bottom: 5px;
-        }
-
-        .current-key-name {
-            font-size: 32px;
-            font-weight: bold;
-        }
-
-        .color-count {
-            font-size: 14px;
-            margin-top: 5px;
-            opacity: 0.9;
-        }
-
-        .color-picker-container {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .color-input-wrapper {
-            flex: 1;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: transparent !important;
+            color: #fff;
+            font-family: Helvetica, Arial, sans-serif;
             position: relative;
         }
 
-        input[type="color"] {
-            width: 100%;
-            height: 50px;
-            border: 3px solid #667eea;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: transform 0.2s;
+        #glcanvas {
+            display: block !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            outline: 0 !important;
+            transform: none !important;
+            background: transparent !important;
         }
 
-        input[type="color"]:hover {
-            transform: scale(1.05);
-        }
-
-        .add-color-btn {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 10px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-
-        .add-color-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-
-        .add-color-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .selected-colors {
-            margin-bottom: 20px;
-        }
-
-        .selected-colors-title {
-            font-size: 14px;
-            color: #666;
-            margin-bottom: 10px;
-            font-weight: 600;
-        }
-
-        .color-list {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 8px;
-            max-height: 200px;
-            overflow-y: auto;
-            padding: 5px;
-        }
-
-        .color-item {
-            position: relative;
-            width: 100%;
-            padding-bottom: 100%;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: transform 0.2s;
-            border: 2px solid rgba(0,0,0,0.1);
-        }
-
-        .color-item:hover {
-            transform: scale(1.1);
-            z-index: 10;
-        }
-
-        .color-item-inner {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .remove-color {
-            display: none;
-            background: rgba(255, 255, 255, 0.9);
-            color: #ff4757;
-            border: none;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            font-size: 12px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .color-item:hover .remove-color {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .actions {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .action-btn {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 10px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .undo-btn {
-            background: #ffa502;
-            color: white;
-        }
-
-        .undo-btn:hover {
-            background: #ff7f00;
-        }
-
-        .next-key-btn {
-            background: #2ed573;
-            color: white;
-        }
-
-        .next-key-btn:hover {
-            background: #26de81;
-        }
-
-        .action-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .export-section {
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 2px solid #eee;
-        }
-
-        .export-btn {
-            width: 100%;
-            padding: 15px;
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-weight: bold;
-            font-size: 16px;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-
-        .export-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(245, 87, 108, 0.4);
-        }
-
-        .keys-list {
-            flex: 1;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            padding: 25px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            overflow-y: auto;
-            max-height: calc(100vh - 40px);
-        }
-
-        .keys-list-title {
-            font-size: 20px;
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .key-entry {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 12px;
-            margin-bottom: 15px;
-            border: 2px solid transparent;
-            transition: all 0.2s;
-        }
-
-        .key-entry.active {
-            border-color: #667eea;
-            background: #e8eaf6;
-        }
-
-        .key-entry-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-
-        .key-name {
-            font-weight: bold;
-            font-size: 18px;
-            color: #333;
-        }
-
-        .key-color-count {
-            color: #667eea;
-            font-size: 14px;
-        }
-
-        .key-colors {
-            display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
-        }
-
-        .key-color-dot {
-            width: 30px;
-            height: 30px;
-            border-radius: 6px;
-            border: 2px solid rgba(0,0,0,0.1);
-        }
-
-        .output-area {
-            margin-top: 20px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            font-family: monospace;
-            font-size: 12px;
-            max-height: 200px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-            word-break: break-all;
-        }
-
-        .copy-btn {
-            margin-top: 10px;
-            width: 100%;
-            padding: 10px;
-            background: #5f27cd;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .copy-btn:hover {
-            background: #341f97;
-        }
-
-        .instructions {
-            background: #fff3cd;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            font-size: 13px;
-            line-height: 1.6;
-            color: #856404;
-        }
-
-        .instructions strong {
-            color: #856404;
+        div[style*="position: absolute"],
+        div[style*="fixed"],
+        .cables-stats,
+        .stats-panel {
+            display: none !important;
+            visibility: hidden !important;
         }
     </style>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
 </head>
 <body>
-    <div class="panel">
-        <div class="title">🎹 Piyano Renk Seçici</div>
-        
-        <div class="instructions">
-            <strong>Nasıl Kullanılır:</strong><br>
-            1. Damlalık ile PNG'den renk seç<br>
-            2. "Renk Ekle" ile listeye ekle (max 10)<br>
-            3. Yanlış renk varsa üzerine tıkla<br>
-            4. "Sonraki Tuş" ile ilerle<br>
-            5. Tamamlayınca "JSON İndir" 📥
-        </div>
+    <canvas id="glcanvas" tabindex="1"></canvas>
+    <script type="text/javascript" src="js/patch.js" async></script>
+    <script type="text/javascript">
 
-        <div class="current-key">
-            <div class="current-key-label">Şu Anki Tuş</div>
-            <div class="current-key-name" id="currentKeyName">C</div>
-            <div class="color-count"><span id="colorCount">0</span> / 10 renk</div>
-        </div>
+        // 🎨 RENK PALETİ - JSON'dan gelen renkler
+        const COLOR_PALETTE = {
+            "C": [
+                {"r": 253, "g": 1, "b": 0},
+                {"r": 251, "g": 228, "b": 157},
+                {"r": 162, "g": 219, "b": 32},
+                {"r": 32, "g": 60, "b": 72},
+                {"r": 126, "g": 75, "b": 95},
+                {"r": 197, "g": 117, "b": 119},
+                {"r": 255, "g": 120, "b": 1},
+                {"r": 185, "g": 131, "b": 27},
+                {"r": 0, "g": 28, "b": 158},
+                {"r": 208, "g": 198, "b": 34}
+            ],
+            "C#": [
+                {"r": 215, "g": 228, "b": 196},
+                {"r": 227, "g": 114, "b": 127},
+                {"r": 111, "g": 34, "b": 70},
+                {"r": 54, "g": 215, "b": 146},
+                {"r": 255, "g": 155, "b": 148},
+                {"r": 195, "g": 45, "b": 108},
+                {"r": 255, "g": 90, "b": 139},
+                {"r": 75, "g": 29, "b": 54},
+                {"r": 0, "g": 164, "b": 158},
+                {"r": 220, "g": 203, "b": 185}
+            ],
+            "D": [
+                {"r": 255, "g": 88, "b": 214},
+                {"r": 255, "g": 29, "b": 199},
+                {"r": 255, "g": 132, "b": 0},
+                {"r": 0, "g": 106, "b": 145},
+                {"r": 231, "g": 219, "b": 211},
+                {"r": 0, "g": 43, "b": 59},
+                {"r": 255, "g": 151, "b": 227},
+                {"r": 0, "g": 133, "b": 141},
+                {"r": 255, "g": 0, "b": 95},
+                {"r": 255, "g": 148, "b": 249}
+            ],
+            "D#": [
+                {"r": 209, "g": 235, "b": 235},
+                {"r": 4, "g": 189, "b": 238},
+                {"r": 0, "g": 106, "b": 143},
+                {"r": 0, "g": 202, "b": 0},
+                {"r": 5, "g": 185, "b": 238},
+                {"r": 0, "g": 111, "b": 155},
+                {"r": 229, "g": 0, "b": 103},
+                {"r": 182, "g": 0, "b": 144},
+                {"r": 245, "g": 36, "b": 98},
+                {"r": 255, "g": 0, "b": 142}
+            ],
+            "E": [
+                {"r": 71, "g": 30, "b": 116},
+                {"r": 152, "g": 98, "b": 227},
+                {"r": 152, "g": 74, "b": 237},
+                {"r": 99, "g": 6, "b": 184},
+                {"r": 176, "g": 0, "b": 173},
+                {"r": 241, "g": 65, "b": 126},
+                {"r": 159, "g": 182, "b": 189},
+                {"r": 177, "g": 247, "b": 12},
+                {"r": 169, "g": 115, "b": 240},
+                {"r": 163, "g": 223, "b": 88}
+            ],
+            "F": [
+                {"r": 84, "g": 80, "b": 172},
+                {"r": 195, "g": 107, "b": 187},
+                {"r": 233, "g": 155, "b": 81},
+                {"r": 161, "g": 120, "b": 161},
+                {"r": 52, "g": 89, "b": 148},
+                {"r": 53, "g": 47, "b": 54},
+                {"r": 67, "g": 61, "b": 72},
+                {"r": 3, "g": 126, "b": 141},
+                {"r": 86, "g": 78, "b": 171},
+                {"r": 181, "g": 87, "b": 210}
+            ],
+            "F#": [
+                {"r": 2, "g": 140, "b": 167},
+                {"r": 46, "g": 146, "b": 25},
+                {"r": 219, "g": 254, "b": 0},
+                {"r": 254, "g": 47, "b": 196},
+                {"r": 0, "g": 103, "b": 124},
+                {"r": 0, "g": 81, "b": 36},
+                {"r": 198, "g": 242, "b": 155},
+                {"r": 232, "g": 53, "b": 168},
+                {"r": 0, "g": 26, "b": 36},
+                {"r": 0, "g": 183, "b": 0}
+            ],
+            "G": [
+                {"r": 255, "g": 83, "b": 4},
+                {"r": 251, "g": 113, "b": 83},
+                {"r": 255, "g": 67, "b": 2},
+                {"r": 179, "g": 72, "b": 33},
+                {"r": 0, "g": 74, "b": 96},
+                {"r": 0, "g": 88, "b": 97},
+                {"r": 121, "g": 140, "b": 148},
+                {"r": 29, "g": 100, "b": 94},
+                {"r": 1, "g": 117, "b": 120},
+                {"r": 252, "g": 86, "b": 0}
+            ],
+            "G#": [
+                {"r": 46, "g": 189, "b": 15},
+                {"r": 1, "g": 229, "b": 2},
+                {"r": 85, "g": 65, "b": 190},
+                {"r": 47, "g": 61, "b": 97},
+                {"r": 5, "g": 223, "b": 3},
+                {"r": 3, "g": 164, "b": 240},
+                {"r": 123, "g": 23, "b": 254},
+                {"r": 43, "g": 43, "b": 73},
+                {"r": 2, "g": 177, "b": 240},
+                {"r": 41, "g": 41, "b": 46}
+            ],
+            "A": [
+                {"r": 40, "g": 121, "b": 193},
+                {"r": 255, "g": 155, "b": 188},
+                {"r": 255, "g": 207, "b": 166},
+                {"r": 232, "g": 24, "b": 140},
+                {"r": 204, "g": 67, "b": 157},
+                {"r": 57, "g": 78, "b": 167},
+                {"r": 255, "g": 217, "b": 162},
+                {"r": 254, "g": 116, "b": 156},
+                {"r": 192, "g": 44, "b": 106},
+                {"r": 92, "g": 73, "b": 163}
+            ],
+            "A#": [
+                {"r": 235, "g": 145, "b": 0},
+                {"r": 252, "g": 74, "b": 85},
+                {"r": 31, "g": 112, "b": 159},
+                {"r": 87, "g": 28, "b": 131},
+                {"r": 253, "g": 102, "b": 100},
+                {"r": 238, "g": 97, "b": 26},
+                {"r": 250, "g": 159, "b": 30},
+                {"r": 32, "g": 123, "b": 150},
+                {"r": 77, "g": 60, "b": 154},
+                {"r": 254, "g": 72, "b": 0}
+            ],
+            "B": [
+                {"r": 1, "g": 203, "b": 255},
+                {"r": 8, "g": 41, "b": 172},
+                {"r": 16, "g": 0, "b": 112},
+                {"r": 218, "g": 9, "b": 65},
+                {"r": 255, "g": 117, "b": 254},
+                {"r": 2, "g": 149, "b": 252},
+                {"r": 2, "g": 226, "b": 255},
+                {"r": 19, "g": 0, "b": 164},
+                {"r": 236, "g": 10, "b": 115},
+                {"r": 251, "g": 64, "b": 248}
+            ],
+            "C2": [
+                {"r": 206, "g": 101, "b": 119},
+                {"r": 255, "g": 255, "b": 255},
+                {"r": 190, "g": 172, "b": 163},
+                {"r": 225, "g": 48, "b": 86},
+                {"r": 87, "g": 160, "b": 170},
+                {"r": 202, "g": 173, "b": 128},
+                {"r": 215, "g": 67, "b": 111},
+                {"r": 246, "g": 76, "b": 96},
+                {"r": 148, "g": 148, "b": 146},
+                {"r": 24, "g": 99, "b": 120}
+            ],
+            "C#2": [
+                {"r": 223, "g": 59, "b": 0},
+                {"r": 244, "g": 66, "b": 0},
+                {"r": 255, "g": 97, "b": 0},
+                {"r": 203, "g": 0, "b": 10},
+                {"r": 132, "g": 2, "b": 15},
+                {"r": 51, "g": 11, "b": 12},
+                {"r": 255, "g": 91, "b": 1},
+                {"r": 242, "g": 0, "b": 8},
+                {"r": 255, "g": 76, "b": 0},
+                {"r": 214, "g": 0, "b": 7}
+            ],
+            "D2": [
+                {"r": 9, "g": 106, "b": 64},
+                {"r": 169, "g": 157, "b": 41},
+                {"r": 22, "g": 63, "b": 108},
+                {"r": 7, "g": 182, "b": 190},
+                {"r": 185, "g": 162, "b": 78},
+                {"r": 0, "g": 146, "b": 89},
+                {"r": 0, "g": 67, "b": 125},
+                {"r": 125, "g": 126, "b": 32},
+                {"r": 221, "g": 192, "b": 75},
+                {"r": 2, "g": 145, "b": 129}
+            ],
+            "D#2": [
+                {"r": 12, "g": 12, "b": 12},
+                {"r": 255, "g": 69, "b": 1},
+                {"r": 6, "g": 41, "b": 57},
+                {"r": 38, "g": 123, "b": 192},
+                {"r": 233, "g": 117, "b": 25},
+                {"r": 237, "g": 0, "b": 17},
+                {"r": 221, "g": 116, "b": 0},
+                {"r": 28, "g": 28, "b": 28},
+                {"r": 195, "g": 131, "b": 155},
+                {"r": 255, "g": 55, "b": 1}
+            ]
+        };
 
-        <div class="color-picker-container">
-            <div class="color-input-wrapper">
-                <input type="color" id="colorPicker" value="#ff69b4">
-            </div>
-            <button class="add-color-btn" id="addColorBtn">
-                Renk Ekle
-            </button>
-        </div>
+        function showError(initiator,...args) {}
 
-        <div class="selected-colors">
-            <div class="selected-colors-title">Seçilen Renkler</div>
-            <div class="color-list" id="colorList"></div>
-        </div>
+        let parentWidth = window.innerWidth;
+        let parentHeight = window.innerHeight;
 
-        <div class="actions">
-            <button class="action-btn undo-btn" id="undoBtn" disabled>
-                ↶ Geri Al
-            </button>
-            <button class="action-btn next-key-btn" id="nextKeyBtn">
-                Sonraki Tuş →
-            </button>
-        </div>
+        if (window.parent !== window) {
+            try {
+                parentWidth = window.parent.innerWidth;
+                parentHeight = window.parent.innerHeight;
+            } catch(e) {}
+        }
 
-        <div class="export-section">
-            <button class="export-btn" id="exportBtn">
-                📥 JSON İndir (Tüm Renkler)
-            </button>
-            <div class="output-area" id="outputArea"></div>
-            <button class="copy-btn" id="copyBtn" style="display: none;">
-                📋 Kopyala
-            </button>
-        </div>
-    </div>
+        function forceFullScreenCanvas() {
+            const canvas = document.getElementById('glcanvas');
+            if (!canvas) return;
+            
+            const width = parentWidth || window.innerWidth || document.documentElement.clientWidth;
+            const height = parentHeight || window.innerHeight || document.documentElement.clientHeight;
+            
+            canvas.width = width;
+            canvas.height = height;
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+            canvas.style.position = 'absolute';
+            canvas.style.top = '0';
+            canvas.style.left = '0';
+        }
 
-    <div class="keys-list">
-        <div class="keys-list-title">🎼 Tüm Tuşlar</div>
-        <div id="keysListContainer"></div>
-    </div>
+        function patchInitialized(patch) {
+            console.log('✅ Fluid hazır!');
+            hideStatsPanels();
+            forceFullScreenCanvas();
+            
+            setTimeout(forceFullScreenCanvas, 100);
+            setTimeout(forceFullScreenCanvas, 500);
+            setTimeout(forceFullScreenCanvas, 1000);
+            setTimeout(forceFullScreenCanvas, 2000);
+        }
 
-    <script>
-        // Tüm piyano tuşları
-        const PIANO_KEYS = [
-            'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B',
-            'C2', 'C#2', 'D2', 'D#2', 'E2', 'F2', 'F#2', 'G2', 'G#2', 'A2', 'A#2', 'B2',
-            'C3'
+        function patchFinishedLoading(patch) {
+            console.log('🎨 Yükleme tamamlandı!');
+            hideStatsPanels();
+            forceFullScreenCanvas();
+        }
+
+        function hideStatsPanels() {
+            setTimeout(() => {
+                const statsDivs = document.querySelectorAll('div');
+                statsDivs.forEach(div => {
+                    const style = div.getAttribute('style');
+                    if (style && (style.includes('position: absolute') || style.includes('position: fixed'))) {
+                        div.style.display = 'none';
+                        div.style.visibility = 'hidden';
+                    }
+                });
+            }, 100);
+        }
+
+        // 🎹 TUŞA GÖRE RENK PALETİNİ AL
+        function getColorsForKey(key) {
+            // Tuş adını normalize et (C, C#, D, D#, vs.)
+            const normalizedKey = key.toUpperCase().replace('♯', '#').replace('SHARP', '#');
+            
+            // Renk paletini al
+            const colors = COLOR_PALETTE[normalizedKey];
+            
+            if (!colors || colors.length === 0) {
+                console.warn(`⚠️ ${key} için renk bulunamadı, varsayılan renkler kullanılıyor`);
+                return [
+                    {r: 255, g: 80, b: 180},
+                    {r: 80, g: 180, b: 255},
+                    {r: 255, g: 180, b: 80},
+                    {r: 180, g: 255, b: 80},
+                    {r: 255, g: 80, b: 80},
+                    {r: 80, g: 255, b: 180},
+                    {r: 180, g: 80, b: 255},
+                    {r: 255, g: 255, b: 80},
+                    {r: 80, g: 255, b: 255},
+                    {r: 255, g: 180, b: 180}
+                ];
+            }
+            
+            console.log(`🎨 ${key} için ${colors.length} renk yüklendi`);
+            return colors;
+        }
+
+        // 🌊 HAREKET PATTERNLERİ
+        const FLOW_PATTERNS = [
+            { type: 'circle', radius: 160, clockwise: true },
+            { type: 'circle', radius: 160, clockwise: false },
+            { type: 'circle', radius: 130, clockwise: true },
+            { type: 'spiral', startRadius: 50, endRadius: 150, clockwise: true },
+            { type: 'spiral', startRadius: 150, endRadius: 50, clockwise: false },
+            { type: 's_curve', amplitude: 90, length: 320 },
+            { type: 'wave', amplitude: 80, wavelength: 220, length: 360 }
         ];
 
-        let currentKeyIndex = 0;
-        let keyColors = {};
-        let history = [];
-
-        // Her tuş için boş array oluştur
-        PIANO_KEYS.forEach(key => {
-            keyColors[key] = [];
+        // 🎹 PİYANO MESAJ SİSTEMİ - ARTIK JSON RENKLERİ KULLANIYOR
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'pianoKeyPress') {
+                const key = event.data.key;
+                
+                // JSON'dan o tuş için tüm 10 rengi al
+                const allColors = getColorsForKey(key);
+                
+                if (allColors.length === 0) return;
+                
+                console.log(`🎹 ${key.toUpperCase()} → ${allColors.length} renk kullanılıyor`);
+                
+                const pattern = FLOW_PATTERNS[Math.floor(Math.random() * FLOW_PATTERNS.length)];
+                
+                const startX = Math.random() * 0.3 * parentWidth + 0.35 * parentWidth;
+                const startY = Math.random() * 0.3 * parentHeight + 0.35 * parentHeight;
+                
+                createFluidFlow(startX, startY, allColors, pattern);
+            }
         });
 
-        const colorPicker = document.getElementById('colorPicker');
-        const addColorBtn = document.getElementById('addColorBtn');
-        const undoBtn = document.getElementById('undoBtn');
-        const nextKeyBtn = document.getElementById('nextKeyBtn');
-        const exportBtn = document.getElementById('exportBtn');
-        const copyBtn = document.getElementById('copyBtn');
-        const colorList = document.getElementById('colorList');
-        const currentKeyName = document.getElementById('currentKeyName');
-        const colorCount = document.getElementById('colorCount');
-        const outputArea = document.getElementById('outputArea');
-        const keysListContainer = document.getElementById('keysListContainer');
-
-        function hexToRgb(hex) {
-            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-            return result ? {
-                r: parseInt(result[1], 16),
-                g: parseInt(result[2], 16),
-                b: parseInt(result[3], 16)
-            } : null;
-        }
-
-        function updateUI() {
-            const currentKey = PIANO_KEYS[currentKeyIndex];
-            const colors = keyColors[currentKey];
-
-            currentKeyName.textContent = currentKey;
-            colorCount.textContent = colors.length;
-
-            // Renk listesini güncelle
-            colorList.innerHTML = '';
-            colors.forEach((color, index) => {
-                const colorItem = document.createElement('div');
-                colorItem.className = 'color-item';
-                colorItem.innerHTML = `
-                    <div class="color-item-inner" style="background: ${color.hex}">
-                        <button class="remove-color">×</button>
-                    </div>
-                `;
-                colorItem.querySelector('.remove-color').onclick = () => removeColor(index);
-                colorList.appendChild(colorItem);
-            });
-
-            // Butonları güncelle
-            addColorBtn.disabled = colors.length >= 10;
-            undoBtn.disabled = history.length === 0;
-
-            // Tuş listesini güncelle
-            updateKeysList();
-        }
-
-        function updateKeysList() {
-            keysListContainer.innerHTML = '';
-            PIANO_KEYS.forEach((key, index) => {
-                const colors = keyColors[key];
-                const entry = document.createElement('div');
-                entry.className = 'key-entry' + (index === currentKeyIndex ? ' active' : '');
-                
-                const colorsHTML = colors.map(c => 
-                    `<div class="key-color-dot" style="background: ${c.hex}"></div>`
-                ).join('');
-
-                entry.innerHTML = `
-                    <div class="key-entry-header">
-                        <div class="key-name">${key}</div>
-                        <div class="key-color-count">${colors.length} renk</div>
-                    </div>
-                    <div class="key-colors">${colorsHTML || '<span style="color: #999; font-size: 12px;">Henüz renk seçilmedi</span>'}</div>
-                `;
-                
-                entry.onclick = () => {
-                    currentKeyIndex = index;
-                    updateUI();
-                };
-                
-                keysListContainer.appendChild(entry);
-            });
-        }
-
-        function addColor() {
-            const currentKey = PIANO_KEYS[currentKeyIndex];
-            const colors = keyColors[currentKey];
+        function setPianoColor(color) {
+            if (typeof CABLES === 'undefined' || !CABLES.patch) return;
             
-            if (colors.length >= 10) return;
-
-            const hex = colorPicker.value;
-            const rgb = hexToRgb(hex);
-
-            // History'ye ekle
-            history.push({
-                key: currentKey,
-                action: 'add',
-                color: { hex, rgb }
-            });
-
-            colors.push({ hex, rgb });
-            updateUI();
+            try {
+                const normalizedColor = [
+                    color.r / 255,
+                    color.g / 255,
+                    color.b / 255
+                ];
+                CABLES.patch.setVariable('SplatColor', normalizedColor);
+            } catch(e) {}
         }
 
-        function removeColor(index) {
-            const currentKey = PIANO_KEYS[currentKeyIndex];
-            const colors = keyColors[currentKey];
-            const removedColor = colors[index];
-
-            // History'ye ekle
-            history.push({
-                key: currentKey,
-                action: 'remove',
-                index: index,
-                color: removedColor
-            });
-
-            colors.splice(index, 1);
-            updateUI();
+        // 🎨 RENK BLENDING - 10 RENK ARASINDA YUMUŞAK GEÇİŞ
+        function blendColors(color1, color2, ratio) {
+            return {
+                r: Math.round(color1.r * (1 - ratio) + color2.r * ratio),
+                g: Math.round(color1.g * (1 - ratio) + color2.g * ratio),
+                b: Math.round(color1.b * (1 - ratio) + color2.b * ratio)
+            };
         }
 
-        function undo() {
-            if (history.length === 0) return;
-
-            const lastAction = history.pop();
-            const colors = keyColors[lastAction.key];
-
-            if (lastAction.action === 'add') {
-                colors.pop();
-            } else if (lastAction.action === 'remove') {
-                colors.splice(lastAction.index, 0, lastAction.color);
-            }
-
-            updateUI();
-        }
-
-        function nextKey() {
-            if (currentKeyIndex < PIANO_KEYS.length - 1) {
-                currentKeyIndex++;
-                updateUI();
-            }
-        }
-
-        function exportColors() {
-            const data = {};
+        // 🌊 FLUID AKIŞI - TÜM 10 RENGİ KULLAN
+        function createFluidFlow(startX, startY, colors, pattern) {
+            const canvas = document.getElementById('glcanvas');
+            if (!canvas) return;
             
-            PIANO_KEYS.forEach(key => {
-                data[key] = keyColors[key].map(c => c.rgb);
-            });
-
-            const json = JSON.stringify(data, null, 2);
+            const width = parentWidth || window.innerWidth;
+            const height = parentHeight || window.innerHeight;
             
-            // JSON'u göster
-            outputArea.textContent = json;
-            copyBtn.style.display = 'block';
-
-            // JSON dosyası olarak indir
-            const blob = new Blob([json], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'piano-colors.json';
-            a.click();
-            URL.revokeObjectURL(url);
-        }
-
-        function copyToClipboard() {
-            navigator.clipboard.writeText(outputArea.textContent);
-            copyBtn.textContent = '✅ Kopyalandı!';
+            // SABİT SÜRE: 200 frame × 18ms = 3.6 saniye
+            const TOTAL_FRAMES = 200;
+            const FRAME_DURATION = 18;
+            
+            let frameIndex = 0;
+            
+            // Path hesapla
+            const basePath = generateBasePath(startX, startY, pattern, width, height, TOTAL_FRAMES);
+            
+            // İlk rengi set et
+            setPianoColor(colors[0]);
+            
+            // İlk %20'sini atla - böylece patlama olmaz
+            const startFrame = Math.floor(basePath.length * 0.2);
+            let currentX = basePath[startFrame].x;
+            let currentY = basePath[startFrame].y;
+            
+            console.log(`🎨 Fluid başlıyor: ${colors.length} renk ile animasyon`);
+            
+            // MOUSEDOWN
+            canvas.dispatchEvent(new MouseEvent('mousedown', {
+                clientX: currentX,
+                clientY: currentY,
+                button: 0,
+                buttons: 1,
+                bubbles: true
+            }));
+            
+            // Hemen hareket başlat
             setTimeout(() => {
-                copyBtn.textContent = '📋 Kopyala';
-            }, 2000);
+                // ANA ANİMASYON - 10 RENK ARASINDA GEÇİŞ
+                const animationInterval = setInterval(() => {
+                    frameIndex++;
+                    
+                    if (frameIndex >= TOTAL_FRAMES - startFrame) {
+                        clearInterval(animationInterval);
+                        
+                        // MOUSEUP
+                        canvas.dispatchEvent(new MouseEvent('mouseup', {
+                            clientX: currentX,
+                            clientY: currentY,
+                            button: 0,
+                            buttons: 0,
+                            bubbles: true
+                        }));
+                        
+                        console.log('✅ Fluid tamamlandı');
+                        return;
+                    }
+                    
+                    const actualFrame = frameIndex + startFrame;
+                    
+                    // RENK BLENDING - 10 RENK ARASI SMOOTH GEÇİŞ
+                    const progress = frameIndex / (TOTAL_FRAMES - startFrame);
+                    
+                    // 10 renk arasında geçiş yap
+                    const colorProgress = progress * (colors.length - 1);
+                    const colorIndex = Math.floor(colorProgress);
+                    const colorBlend = colorProgress - colorIndex;
+                    
+                    if (colorIndex < colors.length - 1) {
+                        // İki renk arasında blend
+                        const blendedColor = blendColors(
+                            colors[colorIndex], 
+                            colors[colorIndex + 1], 
+                            colorBlend
+                        );
+                        setPianoColor(blendedColor);
+                    } else {
+                        // Son renk
+                        setPianoColor(colors[colors.length - 1]);
+                    }
+                    
+                    // YENİ POZİSYON
+                    if (actualFrame < basePath.length) {
+                        currentX = basePath[actualFrame].x;
+                        currentY = basePath[actualFrame].y;
+                        
+                        currentX = Math.max(20, Math.min(width - 20, currentX));
+                        currentY = Math.max(20, Math.min(height - 20, currentY));
+                        
+                        // MOUSEMOVE
+                        canvas.dispatchEvent(new MouseEvent('mousemove', {
+                            clientX: currentX,
+                            clientY: currentY,
+                            button: 0,
+                            buttons: 1,
+                            bubbles: true
+                        }));
+                    }
+                    
+                }, FRAME_DURATION);
+            }, 40);
         }
 
-        // Event listeners
-        addColorBtn.onclick = addColor;
-        undoBtn.onclick = undo;
-        nextKeyBtn.onclick = nextKey;
-        exportBtn.onclick = exportColors;
-        copyBtn.onclick = copyToClipboard;
+        // 🎨 PATH GENERATOR
+        function generateBasePath(startX, startY, pattern, width, height, pointCount) {
+            const points = [];
+            
+            const noiseOffsetX = Math.random() * 1000;
+            const noiseOffsetY = Math.random() * 1000;
+            
+            for (let i = 0; i < pointCount; i++) {
+                const t = i / pointCount;
+                let x, y;
+                
+                const noiseScale = 0.025;
+                const noiseX = (Math.sin(i * noiseScale + noiseOffsetX) + 
+                               Math.sin(i * noiseScale * 2.3 + noiseOffsetX * 1.4)) * 10;
+                const noiseY = (Math.cos(i * noiseScale + noiseOffsetY) + 
+                               Math.cos(i * noiseScale * 1.9 + noiseOffsetY * 1.7)) * 10;
+                
+                switch(pattern.type) {
+                    case 'circle':
+                        const angleCircle = t * Math.PI * 2 * (pattern.clockwise ? 1 : -1);
+                        const breathe = 1 + Math.sin(t * Math.PI * 2.5) * 0.1;
+                        x = startX + Math.cos(angleCircle) * pattern.radius * breathe + noiseX;
+                        y = startY + Math.sin(angleCircle) * pattern.radius * breathe + noiseY;
+                        break;
+                        
+                    case 'spiral':
+                        const angleSpiral = t * Math.PI * 4 * (pattern.clockwise ? 1 : -1);
+                        const radiusSpiral = pattern.startRadius + 
+                                            (pattern.endRadius - pattern.startRadius) * t;
+                        x = startX + Math.cos(angleSpiral) * radiusSpiral + noiseX;
+                        y = startY + Math.sin(angleSpiral) * radiusSpiral + noiseY;
+                        break;
+                        
+                    case 's_curve':
+                        x = startX + (t - 0.5) * pattern.length + noiseX;
+                        y = startY + Math.sin(t * Math.PI * 2) * pattern.amplitude + noiseY;
+                        break;
+                        
+                    case 'wave':
+                        const waveProgress = t * pattern.length;
+                        x = startX + waveProgress * Math.cos(Math.PI / 6) + noiseX;
+                        y = startY + waveProgress * Math.sin(Math.PI / 6) + 
+                            Math.sin(waveProgress / pattern.wavelength * Math.PI * 2) * pattern.amplitude + noiseY;
+                        break;
+                        
+                    default:
+                        x = startX + t * 100;
+                        y = startY + t * 100;
+                }
+                
+                points.push({ x, y });
+            }
+            
+            return points;
+        }
 
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') addColor();
-            if (e.key === 'ArrowRight') nextKey();
-            if (e.ctrlKey && e.key === 'z') undo();
+        window.addEventListener('DOMContentLoaded', () => {
+            forceFullScreenCanvas();
         });
 
-        // İlk yükleme
-        updateUI();
+        document.addEventListener("CABLES.jsLoaded", function (event) {
+            forceFullScreenCanvas();
+            
+            CABLES.patch = new CABLES.Patch({
+                patch: CABLES.exportedPatch,
+                "prefixAssetPath": "",
+                "assetPath": "assets/",
+                "jsPath": "js/",
+                "glCanvasId": "glcanvas",
+                "glCanvasResizeToWindow": true,
+                "onError": showError,
+                "onPatchLoaded": patchInitialized,
+                "onFinishedLoading": patchFinishedLoading,
+                "canvas": {"alpha":true, "premultipliedAlpha":true }
+            });
+            
+            hideStatsPanels();
+            setTimeout(forceFullScreenCanvas, 50);
+        });
+
+        document.getElementById('glcanvas').addEventListener('touchmove', (e)=>{ e.preventDefault(); }, false);
+        
+        setInterval(hideStatsPanels, 1000);
+        setInterval(forceFullScreenCanvas, 2000);
+        
+        window.addEventListener('resize', () => {
+            try {
+                if (window.parent !== window) {
+                    parentWidth = window.parent.innerWidth;
+                    parentHeight = window.parent.innerHeight;
+                }
+            } catch(e) {
+                parentWidth = window.innerWidth;
+                parentHeight = window.innerHeight;
+            }
+            forceFullScreenCanvas();
+        });
+
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'parentResize') {
+                parentWidth = event.data.width;
+                parentHeight = event.data.height;
+                forceFullScreenCanvas();
+            }
+        });
     </script>
 </body>
 </html>
