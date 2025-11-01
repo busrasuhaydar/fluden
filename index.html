@@ -275,13 +275,17 @@
             let prevVelX = 0;
             let prevVelY = 0;
             
-            let currentX = startX;
-            let currentY = startY;
-            
             // İLK RENK SET ET
             setPianoColor(colors[0]);
             
-            // MOUSEDOWN YAP
+            // İLK POZİSYONU HESAPLA - ZATEN HAREKET ETMİŞ GİBİ BAŞLA!
+            const startPos = calculatePosition(startX, startY, 5, pattern, width, height, noiseOffsetX, noiseOffsetY, prevVelX, prevVelY);
+            let currentX = startPos.x;
+            let currentY = startPos.y;
+            prevVelX = startPos.velX || 0;
+            prevVelY = startPos.velY || 0;
+            
+            // MOUSEDOWN - ama zaten hareket etmiş pozisyonda!
             canvas.dispatchEvent(new MouseEvent('mousedown', {
                 clientX: currentX,
                 clientY: currentY,
@@ -291,7 +295,10 @@
                 cancelable: true
             }));
             
-            console.log('🖱️ Mouse down:', currentX, currentY);
+            console.log('🖱️ Mouse down (pre-moved):', currentX, currentY);
+            
+            // 5. adımdan başla (ilk 5 adım zaten atlandı)
+            step = 5;
             
             // ANA LOOP - HEMEN BAŞLA!
             const interval = setInterval(() => {
@@ -331,7 +338,7 @@
                     
                     console.log('✅ Fluid tamamlandı');
                 }
-            }, 35);
+            }, 25); // 35'ten 25'e düşürdüm - biraz daha hızlı
         }
 
         function calculatePosition(startX, startY, step, pattern, width, height, noiseX, noiseY, prevVelX, prevVelY) {
