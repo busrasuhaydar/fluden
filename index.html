@@ -1,484 +1,315 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mouse Hareket Kaydedici</title>
+    <title>Piano Fluid - Living Art</title>
     <style>
         * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+            margin: 0 !important;
+            padding: 0 !important;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            box-sizing: border-box !important;
         }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
-        }
-
-        .container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            padding: 30px;
-            max-width: 900px;
+        html, body {
             width: 100%;
-        }
-
-        h1 {
-            color: #667eea;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .instructions {
-            background: #f0f4ff;
-            border-left: 4px solid #667eea;
-            padding: 15px;
-            margin-bottom: 20px;
-            border-radius: 8px;
-        }
-
-        .instructions h3 {
-            color: #667eea;
-            margin-bottom: 10px;
-        }
-
-        .instructions ol {
-            margin-left: 20px;
-        }
-
-        .instructions li {
-            margin: 5px 0;
-            color: #555;
-        }
-
-        .canvas-container {
-            position: relative;
-            background: #1a1a2e;
-            border-radius: 15px;
+            height: 100%;
             overflow: hidden;
-            margin-bottom: 20px;
+            background-color: transparent !important;
+            color: #fff;
+            font-family: Helvetica, Arial, sans-serif;
+            position: relative;
         }
 
-        #drawCanvas {
-            display: block;
-            width: 100%;
-            height: 400px;
-            cursor: crosshair;
-        }
-
-        .status {
-            position: absolute;
-            top: 15px;
-            left: 15px;
-            background: rgba(255,255,255,0.95);
-            padding: 10px 20px;
-            border-radius: 10px;
-            font-weight: bold;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        }
-
-        .status.recording {
-            background: rgba(255,107,107,0.95);
-            color: white;
-            animation: pulse 1s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
-
-        .controls {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-
-        button {
-            flex: 1;
-            min-width: 150px;
-            padding: 15px 30px;
-            font-size: 16px;
-            font-weight: bold;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        }
-
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-        }
-
-        button:active {
-            transform: translateY(0);
-        }
-
-        #startBtn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        #stopBtn {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-        }
-
-        #clearBtn {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            color: white;
-        }
-
-        #downloadBtn {
-            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-            color: white;
-        }
-
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
+        #glcanvas {
+            display: block !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            outline: 0 !important;
             transform: none !important;
+            background: transparent !important;
         }
 
-        .info-box {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 20px;
-        }
-
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid #dee2e6;
-        }
-
-        .info-row:last-child {
-            border-bottom: none;
-        }
-
-        .info-label {
-            font-weight: bold;
-            color: #667eea;
-        }
-
-        .info-value {
-            color: #555;
-            font-family: 'Courier New', monospace;
-        }
-
-        .preview {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 15px;
-            max-height: 200px;
-            overflow-y: auto;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            color: #555;
+        /* FPS/CPU yazılarını gizle */
+        div[style*="position: absolute"],
+        div[style*="fixed"],
+        .cables-stats,
+        .stats-panel {
+            display: none !important;
+            visibility: hidden !important;
         }
     </style>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
 </head>
 <body>
-    <div class="container">
-        <h1>🎨 Mouse Hareket Kaydedici</h1>
-        
-        <div class="instructions">
-            <h3>📋 Nasıl Kullanılır:</h3>
-            <ol>
-                <li><strong>"Kaydı Başlat"</strong> butonuna tıkla</li>
-                <li>Siyah alana mouse ile <strong>basılı tutarak</strong> istediğin hareketi çiz (spiral, dalgalı, vs.)</li>
-                <li><strong>"Kaydı Durdur"</strong> butonuna tıkla</li>
-                <li><strong>"JSON İndir"</strong> butonuna tıklayarak kaydettiğin hareketi indir</li>
-                <li>İndirdiğin dosyayı bana gönder! 💕</li>
-            </ol>
-        </div>
+    <canvas id="glcanvas" tabindex="1"></canvas>
 
-        <div class="canvas-container">
-            <canvas id="drawCanvas"></canvas>
-            <div class="status" id="status">Hazır</div>
-        </div>
+    <script type="text/javascript" src="js/patch.js" async></script>
 
-        <div class="controls">
-            <button id="startBtn">🔴 Kaydı Başlat</button>
-            <button id="stopBtn" disabled>⏹️ Kaydı Durdur</button>
-            <button id="clearBtn">🗑️ Temizle</button>
-            <button id="downloadBtn" disabled>💾 JSON İndir</button>
-        </div>
+    <script type="text/javascript">
 
-        <div class="info-box">
-            <div class="info-row">
-                <span class="info-label">Kayıtlı Nokta Sayısı:</span>
-                <span class="info-value" id="pointCount">0</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Kayıt Süresi:</span>
-                <span class="info-value" id="duration">0 ms</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Ortalama Hız:</span>
-                <span class="info-value" id="avgSpeed">0 px/frame</span>
-            </div>
-        </div>
+        function showError(initiator,...args) {}
+        let parentWidth = window.innerWidth;
+        let parentHeight = window.innerHeight;
 
-        <div class="preview" id="preview">
-            Hareket kaydedildiğinde buraya önizleme gelecek...
-        </div>
-    </div>
-
-    <script>
-        const canvas = document.getElementById('drawCanvas');
-        const ctx = canvas.getContext('2d');
-        const startBtn = document.getElementById('startBtn');
-        const stopBtn = document.getElementById('stopBtn');
-        const clearBtn = document.getElementById('clearBtn');
-        const downloadBtn = document.getElementById('downloadBtn');
-        const status = document.getElementById('status');
-        const pointCount = document.getElementById('pointCount');
-        const duration = document.getElementById('duration');
-        const avgSpeed = document.getElementById('avgSpeed');
-        const preview = document.getElementById('preview');
-
-        // Canvas boyutunu ayarla
-        function resizeCanvas() {
-            const rect = canvas.getBoundingClientRect();
-            canvas.width = rect.width;
-            canvas.height = rect.height;
-            redraw();
-        }
-        resizeCanvas();
-        window.addEventListener('resize', resizeCanvas);
-
-        let recording = false;
-        let mouseData = [];
-        let isDrawing = false;
-        let startTime = 0;
-
-        // Canvas'ı temizle ve arka planı çiz
-        function clearCanvas() {
-            ctx.fillStyle = '#1a1a2e';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Grid çiz
-            ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-            ctx.lineWidth = 1;
-            for (let i = 0; i < canvas.width; i += 50) {
-                ctx.beginPath();
-                ctx.moveTo(i, 0);
-                ctx.lineTo(i, canvas.height);
-                ctx.stroke();
-            }
-            for (let i = 0; i < canvas.height; i += 50) {
-                ctx.beginPath();
-                ctx.moveTo(0, i);
-                ctx.lineTo(canvas.width, i);
-                ctx.stroke();
-            }
+        if (window.parent !== window) {
+            try {
+                parentWidth = window.parent.innerWidth;
+                parentHeight = window.parent.innerHeight;
+            } catch(e) {}
         }
 
-        clearCanvas();
+        function forceFullScreenCanvas() {
+            const canvas = document.getElementById('glcanvas');
+            if (!canvas) return;
+            const width = parentWidth || window.innerWidth;
+            const height = parentHeight || window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+        }
 
-        // Kaydedilmiş çizgileri tekrar çiz
-        function redraw() {
-            clearCanvas();
-            if (mouseData.length > 1) {
-                ctx.strokeStyle = '#667eea';
-                ctx.lineWidth = 3;
-                ctx.lineCap = 'round';
-                ctx.lineJoin = 'round';
-                
-                ctx.beginPath();
-                ctx.moveTo(mouseData[0].x, mouseData[0].y);
-                
-                for (let i = 1; i < mouseData.length; i++) {
-                    // Gradient renk
-                    const progress = i / mouseData.length;
-                    const hue = progress * 300;
-                    ctx.strokeStyle = `hsl(${hue}, 70%, 60%)`;
-                    
-                    ctx.lineTo(mouseData[i].x, mouseData[i].y);
-                    ctx.stroke();
-                    ctx.beginPath();
-                    ctx.moveTo(mouseData[i].x, mouseData[i].y);
+        function patchInitialized(patch) {
+            console.log('✅ Fluid hazır!');
+            hideStatsPanels();
+            forceFullScreenCanvas();
+        }
+
+        function patchFinishedLoading(patch) {
+            console.log('🎨 Yükleme tamamlandı!');
+            hideStatsPanels();
+            forceFullScreenCanvas();
+        }
+
+        function hideStatsPanels() {
+            setTimeout(() => {
+                document.querySelectorAll('div').forEach(div => {
+                    const style = div.getAttribute('style');
+                    if (style && (style.includes('position: absolute') || style.includes('position: fixed'))) {
+                        div.style.display = 'none';
+                        div.style.visibility = 'hidden';
+                    }
+                });
+            }, 100);
+        }
+
+        // 🎨 EN CANLI ANA RENKLERİ SEÇ
+        function selectBestColors(colors) {
+            if (!colors || colors.length === 0) {
+                return [
+                    {r:255,g:100,b:200},
+                    {r:100,g:200,b:255},
+                    {r:255,g:200,b:100}
+                ];
+            }
+            const vibrant = colors.filter(c=>{
+                const bright=(c.r+c.g+c.b)/3;
+                const sat=Math.max(c.r,c.g,c.b)-Math.min(c.r,c.g,c.b);
+                return bright>50&&bright<220&&sat>40;
+            });
+            const working=vibrant.length?vibrant:colors;
+            const sorted=[...working].sort((a,b)=>{
+                const sa=Math.max(a.r,a.g,a.b)-Math.min(a.r,a.g,a.b);
+                const sb=Math.max(b.r,b.g,b.b)-Math.min(b.r,b.g,b.b);
+                return sb-sa;
+            });
+            return sorted.slice(0,15);
+        }
+
+        // 🌀 PATTERNLER
+        const MOVEMENT_PATTERNS = [
+            {name:'gentle_spiral_right',type:'expanding_spiral',direction:1,startRadius:5,endRadius:100,steps:250},
+            {name:'gentle_spiral_left',type:'expanding_spiral',direction:-1,startRadius:5,endRadius:100,steps:250},
+            {name:'slow_large_circle',type:'circle',direction:1,radius:120,steps:280},
+            {name:'slow_medium_circle',type:'circle',direction:-1,radius:80,steps:260},
+            {name:'smooth_wave',type:'sine_wave',direction:'horizontal',amplitude:50,frequency:0.08,speed:1.2,steps:270},
+            {name:'organic_pour',type:'organic',smoothness:0.85,speed:1.2,steps:260},
+            {name:'lissajous_smooth',type:'lissajous',xFreq:2,yFreq:3,radius:90,steps:300}
+        ];
+
+        // 🎹 PİYANO MESAJ SİSTEMİ
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'pianoKeyPress') {
+                const colors = event.data.colors || [];
+                const key = event.data.key;
+                if (colors.length === 0) return;
+                const bestColors = selectBestColors(colors);
+                if (bestColors.length === 0) return;
+
+                const numFluids = Math.floor(Math.random() * 3) + 3;
+                console.log(`🎹 ${key.toUpperCase()} → ${numFluids} multi-color fluid!`);
+
+                for (let i = 0; i < numFluids; i++) {
+                    const pattern = MOVEMENT_PATTERNS[Math.floor(Math.random() * MOVEMENT_PATTERNS.length)];
+                    const startX = Math.random() * (parentWidth || window.innerWidth);
+                    const startY = Math.random() * (parentHeight || window.innerHeight);
+                    setTimeout(() => {
+                        createProfessionalFluid(startX, startY, bestColors, pattern);
+                    }, i * 60);
                 }
             }
+        });
+
+        function setPianoColor(color) {
+            if (typeof CABLES === 'undefined' || !CABLES.patch) return;
+            try {
+                const norm = [color.r/255, color.g/255, color.b/255];
+                CABLES.patch.setVariable('SplatColor', norm);
+            } catch(e) {}
         }
 
-        // Mouse olayları
-        canvas.addEventListener('mousedown', (e) => {
-            if (!recording) return;
-            
-            isDrawing = true;
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            
-            if (mouseData.length === 0) {
-                startTime = Date.now();
-            }
-            
-            mouseData.push({
-                type: 'mousedown',
-                x: x,
-                y: y,
-                timestamp: Date.now() - startTime
-            });
-            
-            updateInfo();
-        });
+        // 🌈 GELİŞMİŞ PROFESYONEL FLUID
+        function createProfessionalFluid(startX, startY, colors, pattern) {
+            const canvas = document.getElementById('glcanvas');
+            if (!canvas) return;
 
-        canvas.addEventListener('mousemove', (e) => {
-            if (!recording || !isDrawing) return;
-            
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            
-            mouseData.push({
-                type: 'mousemove',
-                x: x,
-                y: y,
-                timestamp: Date.now() - startTime
-            });
-            
-            redraw();
-            updateInfo();
-        });
+            const width = parentWidth || window.innerWidth;
+            const height = parentHeight || window.innerHeight;
+            let step = 0, colorIndex = 0;
+            const maxSteps = pattern.steps;
+            let noiseOffsetX = Math.random() * 1000;
+            let noiseOffsetY = Math.random() * 1000;
+            let prevX = startX, prevY = startY;
 
-        canvas.addEventListener('mouseup', (e) => {
-            if (!recording || !isDrawing) return;
-            
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            
-            mouseData.push({
-                type: 'mouseup',
-                x: x,
-                y: y,
-                timestamp: Date.now() - startTime
-            });
-            
-            isDrawing = false;
-            updateInfo();
-            updatePreview();
-        });
+            setPianoColor(colors[0]);
 
-        // Buton olayları
-        startBtn.addEventListener('click', () => {
-            recording = true;
-            mouseData = [];
-            clearCanvas();
-            
-            status.textContent = '🔴 Kaydediliyor...';
-            status.classList.add('recording');
-            
-            startBtn.disabled = true;
-            stopBtn.disabled = false;
-            downloadBtn.disabled = true;
-        });
+            const startPos = calculatePosition(startX, startY, 0, pattern, width, height, noiseOffsetX, noiseOffsetY, 0, 0);
+            let currentX = startPos.x, currentY = startPos.y;
 
-        stopBtn.addEventListener('click', () => {
-            recording = false;
-            isDrawing = false;
-            
-            status.textContent = '✅ Kayıt Tamamlandı';
-            status.classList.remove('recording');
-            
-            startBtn.disabled = false;
-            stopBtn.disabled = true;
-            downloadBtn.disabled = mouseData.length === 0;
-            
-            updatePreview();
-        });
+            canvas.dispatchEvent(new MouseEvent('mousedown', {
+                clientX: currentX, clientY: currentY, button: 0, buttons: 1, bubbles: true, cancelable: true
+            }));
 
-        clearBtn.addEventListener('click', () => {
-            mouseData = [];
-            clearCanvas();
-            updateInfo();
-            preview.textContent = 'Hareket kaydedildiğinde buraya önizleme gelecek...';
-            downloadBtn.disabled = true;
-        });
+            function easeInOut(t){return t<0.5?2*t*t:-1+(4-2*t)*t;}
 
-        downloadBtn.addEventListener('click', () => {
-            const data = {
-                recordingInfo: {
-                    totalPoints: mouseData.length,
-                    duration: mouseData.length > 0 ? mouseData[mouseData.length - 1].timestamp : 0,
-                    canvasWidth: canvas.width,
-                    canvasHeight: canvas.height,
-                    recordedAt: new Date().toISOString()
-                },
-                movements: mouseData
-            };
-            
-            const json = JSON.stringify(data, null, 2);
-            const blob = new Blob([json], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `mouse_movement_${Date.now()}.json`;
-            a.click();
-            
-            URL.revokeObjectURL(url);
-        });
+            const interval=setInterval(()=>{
+                step++;
+                colorIndex=(colorIndex+1)%colors.length;
+                setPianoColor(colors[colorIndex]);
+                const easedStep=easeInOut(step/maxSteps)*maxSteps;
+                const newPos=calculatePosition(startX,startY,easedStep,pattern,width,height,noiseOffsetX,noiseOffsetY,0,0);
+                const movementX=newPos.x-prevX;
+                const movementY=newPos.y-prevY;
+                prevX=newPos.x; prevY=newPos.y;
+                currentX=newPos.x; currentY=newPos.y;
 
-        // Bilgileri güncelle
-        function updateInfo() {
-            pointCount.textContent = mouseData.length;
-            
-            if (mouseData.length > 0) {
-                const lastTime = mouseData[mouseData.length - 1].timestamp;
-                duration.textContent = `${lastTime} ms`;
-                
-                // Ortalama hız hesapla
-                let totalDistance = 0;
-                for (let i = 1; i < mouseData.length; i++) {
-                    const dx = mouseData[i].x - mouseData[i-1].x;
-                    const dy = mouseData[i].y - mouseData[i-1].y;
-                    totalDistance += Math.sqrt(dx*dx + dy*dy);
+                // Gerçek fare hareketi simülasyonu
+                canvas.dispatchEvent(new MouseEvent('mousemove',{
+                    clientX:currentX, clientY:currentY,
+                    movementX:movementX, movementY:movementY,
+                    bubbles:true, buttons:1, cancelable:true
+                }));
+
+                // Hafif titreşim (doğal his)
+                currentX += (Math.random()-0.5)*2;
+                currentY += (Math.random()-0.5)*2;
+
+                if(step>=maxSteps){
+                    clearInterval(interval);
+                    canvas.dispatchEvent(new MouseEvent('mouseup',{
+                        clientX:currentX, clientY:currentY,
+                        button:0, buttons:0, bubbles:true, cancelable:true
+                    }));
                 }
-                const avgSpd = mouseData.length > 1 ? (totalDistance / (mouseData.length - 1)).toFixed(2) : 0;
-                avgSpeed.textContent = `${avgSpd} px/frame`;
-            } else {
-                duration.textContent = '0 ms';
-                avgSpeed.textContent = '0 px/frame';
-            }
+            },16);
         }
 
-        // Önizleme güncelle
-        function updatePreview() {
-            if (mouseData.length === 0) {
-                preview.textContent = 'Hareket kaydedildiğinde buraya önizleme gelecek...';
-                return;
+        // Pozisyon hesaplayıcı (aynı seninki)
+        function calculatePosition(startX,startY,step,pattern,width,height,noiseX,noiseY,prevVelX,prevVelY){
+            let x,y;
+            const progress=step/pattern.steps;
+            switch(pattern.type){
+                case 'circle':
+                    const angleC=progress*Math.PI*2*pattern.direction;
+                    x=startX+Math.cos(angleC)*pattern.radius;
+                    y=startY+Math.sin(angleC)*pattern.radius;
+                    break;
+                case 'expanding_spiral':
+                    const angleS=progress*Math.PI*6*pattern.direction;
+                    const r=pattern.startRadius+(pattern.endRadius-pattern.startRadius)*progress;
+                    x=startX+Math.cos(angleS)*r;
+                    y=startY+Math.sin(angleS)*r;
+                    break;
+                case 'sine_wave':
+                    if(pattern.direction==='horizontal'){
+                        x=startX+step*pattern.speed;
+                        y=startY+Math.sin(step*pattern.frequency)*pattern.amplitude;
+                    } else {
+                        x=startX+Math.sin(step*pattern.frequency)*pattern.amplitude;
+                        y=startY+step*pattern.speed;
+                    }
+                    break;
+                case 'lissajous':
+                    const t=progress*Math.PI*2;
+                    x=startX+Math.sin(pattern.xFreq*t)*pattern.radius;
+                    y=startY+Math.sin(pattern.yFreq*t)*pattern.radius;
+                    break;
+                case 'organic':
+                    const tVelX=(Math.random()-0.5)*pattern.speed*3;
+                    const tVelY=(Math.random()-0.5)*pattern.speed*3;
+                    const vX=prevVelX*pattern.smoothness+tVelX*(1-pattern.smoothness);
+                    const vY=prevVelY*pattern.smoothness+tVelY*(1-pattern.smoothness);
+                    x=startX+step*pattern.speed+vX*5;
+                    y=startY+vY*5;
+                    return {x,y,velX:vX,velY:vY};
+                default:
+                    x=startX; y=startY;
             }
-            
-            let previewText = `// İlk 10 nokta:\n`;
-            const previewCount = Math.min(10, mouseData.length);
-            
-            for (let i = 0; i < previewCount; i++) {
-                const point = mouseData[i];
-                previewText += `${i}: {type: "${point.type}", x: ${point.x.toFixed(1)}, y: ${point.y.toFixed(1)}, time: ${point.timestamp}ms}\n`;
-            }
-            
-            if (mouseData.length > 10) {
-                previewText += `\n... ve ${mouseData.length - 10} nokta daha\n`;
-            }
-            
-            preview.textContent = previewText;
+            return {x,y};
         }
+
+        window.addEventListener('DOMContentLoaded',forceFullScreenCanvas);
+        document.addEventListener("CABLES.jsLoaded",()=>{
+            forceFullScreenCanvas();
+            CABLES.patch=new CABLES.Patch({
+                patch:CABLES.exportedPatch,
+                prefixAssetPath:"",
+                assetPath:"assets/",
+                jsPath:"js/",
+                glCanvasId:"glcanvas",
+                glCanvasResizeToWindow:true,
+                onError:showError,
+                onPatchLoaded:patchInitialized,
+                onFinishedLoading:patchFinishedLoading,
+                canvas:{alpha:true,premultipliedAlpha:true}
+            });
+            hideStatsPanels();
+        });
+
+        document.getElementById('glcanvas').addEventListener('touchmove',e=>e.preventDefault(),false);
+        setInterval(hideStatsPanels,1000);
+        setInterval(forceFullScreenCanvas,2000);
+        window.addEventListener('resize',()=>{
+            try{
+                if(window.parent!==window){
+                    parentWidth=window.parent.innerWidth;
+                    parentHeight=window.parent.innerHeight;
+                }
+            }catch(e){
+                parentWidth=window.innerWidth;
+                parentHeight=window.innerHeight;
+            }
+            forceFullScreenCanvas();
+        });
+        window.addEventListener('message',e=>{
+            if(e.data.type==='parentResize'){
+                parentWidth=e.data.width;
+                parentHeight=e.data.height;
+                forceFullScreenCanvas();
+            }
+        });
     </script>
 </body>
 </html>
