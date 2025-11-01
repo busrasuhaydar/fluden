@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Piano Fluid - FINAL SOLUTION</title>
+    <title>Fluid from bodyHands</title>
     <style>
         * {
             margin: 0;
@@ -10,34 +10,40 @@
         }
 
         html, body {
-            width: 100vw !important;
-            height: 100vh !important;
-            background-color: #000;
+            width: 100%;
+            height: 100%;
+            background-color: transparent !important; /* ŞEFFAF - iframe'de görünsün */
+            color: #fff;
+            font-family: Helvetica, Arial, sans-serif;
             overflow: hidden;
             position: fixed;
+        }
+
+        #glcanvas {
+            display: block;
+            position: absolute;
             top: 0;
             left: 0;
-        }
-
-        canvas {
-            display: block;
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100vw !important;
-            height: 100vh !important;
+            width: 100vw;
+            height: 100vh;
             outline: 0;
-            z-index: 1;
+            background: transparent !important; /* ŞEFFAF */
+            z-index: 2;
         }
 
-        /* HİÇBİR YAZI GÖRÜNMESIN */
-        div:not(#root), span, p, h1, h2, h3, h4, h5, h6, a, label, button,
-        [class*="fps"], [class*="cpu"], [class*="gpu"], [class*="info"],
-        [class*="cables"], [id*="stats"], [id*="info"] {
-            display: none !important;
-            visibility: hidden !important;
-            opacity: 0 !important;
-            pointer-events: none !important;
+        @keyframes glowFade {
+            0% {
+                opacity: 1;
+                transform: scale(0.5);
+            }
+            50% {
+                opacity: 0.8;
+                transform: scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(1.5);
+            }
         }
 
         * {
@@ -48,43 +54,63 @@
             -ms-user-select: none;
             user-select: none;
         }
+
+        /* TÜM overlay, text, settings ve debug yazılarını GİZLE */
+        .cables-info,
+        .cables-fps,
+        .cables-debug,
+        .cables-settings,
+        div[style*="position: absolute"],
+        div[style*="position: fixed"],
+        div[style*="z-index"],
+        div[class*="cables"],
+        div[id*="cables"],
+        div[class*="settings"],
+        div[id*="settings"],
+        span, p, h1, h2, h3, h4, h5, h6,
+        div:not(#root):not(body) {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+
     </style>
 
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
+    <meta itemprop="name" content="Fluid from bodyHands">
+    <meta itemprop="description" content="made with cables">
+    <meta itemprop="image" content="screenshot.png">
+    <meta name="description" content="made with cables"/>
+
 </head>
 <body>
-    <canvas id="glcanvas" width="100vw" height="100vh" tabindex="1"></canvas>
+    <canvas id="glcanvas" tabindex="1"></canvas>
 
+    
     <script type="text/javascript" src="js/patch.js" async></script>
+    
 
     <script type="text/javascript">
 
-        let patchReady = false;
-
-        function showError(initiator,...args) {
-            // Silent
+        function showError(initiator,...args)
+        {
+            // Error mesajlarını da console'a yazma
+            // CABLES.logErrorConsole("[" + initiator + "]", ...args);
         }
 
-        function patchInitialized(patch) {
-            patchReady = true;
-            console.log('✅ Cables patch hazır!');
-            
-            forceFullscreen();
-            hideAllText();
-            setInterval(hideAllText, 100);
-            
-            setTimeout(() => {
-                try {
-                    const testColor = patch.getVariable('SplatColor');
-                    console.log('📋 SplatColor hazır');
-                } catch(e) {
-                    console.warn('⚠️ SplatColor variable bulunamadı!');
-                }
-            }, 1000);
+        // Canvas boyutlandırma fonksiyonu
+        function resizeCanvas() {
+            const canvas = document.getElementById('glcanvas');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            canvas.style.width = '100vw';
+            canvas.style.height = '100vh';
         }
 
-        function forceFullscreen() {
+        // ZORLA TAM EKRAN - Cables override
+        function forceCanvasResize() {
             const canvas = document.getElementById('glcanvas');
             if (!canvas) return;
             
@@ -100,193 +126,367 @@
                 width: ${w}px !important;
                 height: ${h}px !important;
                 display: block !important;
-                z-index: 1 !important;
             `;
             
-            document.body.style.cssText = `
-                width: 100vw !important;
-                height: 100vh !important;
-                overflow: hidden !important;
-                position: fixed !important;
-                top: 0 !important;
-                left: 0 !important;
-            `;
+            // Cables'e resize event gönder
+            if (CABLES && CABLES.patch) {
+                window.dispatchEvent(new Event('resize'));
+            }
+            
+            console.log('🎯 FORCED resize:', w, 'x', h);
         }
 
-        function hideAllText() {
-            document.querySelectorAll('div, span, p, h1, h2, h3, h4, h5, h6, a, label, button').forEach(el => {
-                if (el.id !== 'root' && el.tagName.toLowerCase() !== 'canvas') {
-                    el.style.display = 'none';
-                    el.style.visibility = 'hidden';
-                    el.style.opacity = '0';
-                }
+        // MESAJ ALICI SİSTEM - Piyanodan renk mesajları al
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'pianoKeyPress') {
+                const colors = event.data.colors;
+                const key = event.data.key;
+                const x = event.data.x || Math.random() * window.innerWidth;
+                const y = event.data.y || Math.random() * window.innerHeight;
+                
+                console.log('📨 Piyanodan mesaj:', key, colors.length, 'renk');
+                console.log('🎨 Gelen renkler:', colors.slice(0, 5).map(c => `rgb(${c.r},${c.g},${c.b})`));
+                
+                triggerFluidWithColors(colors, x, y);
+            }
+        });
+
+        // Renkleri fluid'e uygula ve efekti tetikle
+        // Renkleri fluid'e uygula ve efekti tetikle - OVERLAY SİSTEMİ
+        function triggerFluidWithColors(colors, x, y) {
+            if (!colors || colors.length === 0) {
+                colors = [{ r: 255, g: 100, b: 200 }];
+            }
+            
+            console.log('🎨 Fluid + Glow:', colors.length, 'renk');
+            console.log('🌈 Renkler:', colors.slice(0, 3).map(c => 
+                `rgb(${c.r},${c.g},${c.b})`
+            ).join(' | '));
+            
+            // PNG'den gelen renkleri GLOW EFFECT olarak göster
+            createColorGlow(x, y, colors);
+            
+            // Normal fluid mouse efektleri
+            const colorsToUse = colors.slice(0, 3);
+            
+            colorsToUse.forEach((color, index) => {
+                setTimeout(() => {
+                    const startAngle = (index / colorsToUse.length) * Math.PI * 2;
+                    const offsetX = Math.cos(startAngle) * 50;
+                    const offsetY = Math.sin(startAngle) * 50;
+                    const startX = x + offsetX;
+                    const startY = y + offsetY;
+                    
+                    createColorfulSpiral(startX, startY, color, index);
+                }, index * 50);
             });
         }
 
-        window.addEventListener('resize', forceFullscreen);
-        window.addEventListener('load', () => {
-            forceFullscreen();
-            hideAllText();
-            setTimeout(forceFullscreen, 100);
-            setTimeout(forceFullscreen, 500);
-        });
-
-        function patchFinishedLoading(patch) {
-            console.log('🎨 Fluid yüklendi!');
+        // PNG renklerini GLOW effect olarak göster
+        function createColorGlow(x, y, colors) {
+            const glowContainer = document.getElementById('glow-container');
+            if (!glowContainer) {
+                const container = document.createElement('div');
+                container.id = 'glow-container';
+                container.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100vw;
+                    height: 100vh;
+                    pointer-events: none;
+                    z-index: 1;
+                `;
+                document.body.insertBefore(container, document.body.firstChild);
+            }
+            
+            colors.slice(0, 5).forEach((color, index) => {
+                const glow = document.createElement('div');
+                const size = 200 + Math.random() * 200;
+                
+                glow.style.cssText = `
+                    position: absolute;
+                    left: ${x - size/2}px;
+                    top: ${y - size/2}px;
+                    width: ${size}px;
+                    height: ${size}px;
+                    border-radius: 50%;
+                    background: radial-gradient(circle, 
+                        rgba(${color.r}, ${color.g}, ${color.b}, 0.4) 0%,
+                        rgba(${color.r}, ${color.g}, ${color.b}, 0.2) 40%,
+                        transparent 70%
+                    );
+                    pointer-events: none;
+                    animation: glowFade 2s ease-out forwards;
+                `;
+                
+                document.getElementById('glow-container').appendChild(glow);
+                
+                setTimeout(() => glow.remove(), 2000);
+            });
         }
 
-        // 🎹 PİYANO MESAJ SİSTEMİ - ULTRA RENKLI + RANDOM POZİSYON!
-        window.addEventListener('message', (event) => {
-            if (event.data.type === 'pianoKeyPress') {
-                const colors = event.data.colors || [];
-                const key = event.data.key;
-                
-                // RANDOM POZİSYON - Her tuş farklı yerde başlıyor!
-                const x = Math.random() * window.innerWidth;
-                const y = Math.random() * window.innerHeight;
-                
-                if (colors.length === 0) return;
-                
-                console.log('🎹', key.toUpperCase(), '→', colors.length, 'renk!');
-                
-                // ANA RENK: Merkez spiral
-                applyPianoColor(colors[0]);
-                simulatePianoInput(x, y);
-                
-                // EK RENKLER: Çevrede patlamalar (5-7 renk)
-                const extraColors = colors.slice(1, 8);
-                extraColors.forEach((color, i) => {
-                    setTimeout(() => {
-                        const angle = (i / extraColors.length) * Math.PI * 2;
-                        const dist = 80 + Math.random() * 40;
-                        const newX = x + Math.cos(angle) * dist;
-                        const newY = y + Math.sin(angle) * dist;
-                        
-                        applyPianoColor(color);
-                        simulatePianoInput(newX, newY);
-                    }, (i + 1) * 100);
-                });
-            }
-        });
-
-        // PNG rengini Cables'e gönder - DAHA BELİRGİN RENKLER
-        function applyPianoColor(color) {
-            if (!patchReady || typeof CABLES === 'undefined' || !CABLES.patch) {
-                return;
-            }
-
-            // DAHA BELİRGİN RENKLER - MAKSIMUM BOOST
-            let r = color.r;
-            let g = color.g;
-            let b = color.b;
+        // Renkli spiral efekt oluştur
+        function createColorfulSpiral(x, y, color, index) {
+            simulateMouseDown(x, y);
             
-            // 1. Koyu renkleri daha fazla aydınlat
-            const brightness = (r + g + b) / 3;
-            if (brightness < 120) {
-                const factor = 120 / Math.max(brightness, 1);
-                r = Math.min(255, r * factor);
-                g = Math.min(255, g * factor);
-                b = Math.min(255, b * factor);
-            }
-            
-            // 2. Daha agresif saturation boost
-            const max = Math.max(r, g, b);
-            const avg = (r + g + b) / 3;
-            
-            if (max > 0) {
-                const boost = 2.0; // MAKSIMUM boost (1.6'dan 2.0'a)
-                r = Math.min(255, Math.max(0, avg + (r - avg) * boost));
-                g = Math.min(255, Math.max(0, avg + (g - avg) * boost));
-                b = Math.min(255, Math.max(0, avg + (b - avg) * boost));
-            }
-
-            const normalizedColor = [
-                r / 255,
-                g / 255,
-                b / 255
-            ];
-
-            try {
-                CABLES.patch.setVariable('SplatColor', normalizedColor);
-                console.log('✅ Renk:', Math.round(r), Math.round(g), Math.round(b));
-            } catch(e) {}
-
-            try {
-                CABLES.patch.setVariable('pianoColorR', normalizedColor[0]);
-                CABLES.patch.setVariable('pianoColorG', normalizedColor[1]);
-                CABLES.patch.setVariable('pianoColorB', normalizedColor[2]);
-            } catch(e) {}
-
-            try {
-                CABLES.patch.setVariable('colorR', normalizedColor[0]);
-                CABLES.patch.setVariable('colorG', normalizedColor[1]);
-                CABLES.patch.setVariable('colorB', normalizedColor[2]);
-            } catch(e) {}
-            
-            try {
-                CABLES.patch.setVariable('color', normalizedColor);
-            } catch(e) {}
-        }
-
-        // Mouse simülasyonu - SPIRAL HAREKET
-        function simulatePianoInput(startX, startY) {
-            const canvas = document.getElementById('glcanvas');
-            if (!canvas) {
-                console.warn('⚠️ Canvas bulunamadı!');
-                return;
-            }
-
-            canvas.dispatchEvent(new MouseEvent('mousedown', {
-                clientX: startX,
-                clientY: startY,
-                button: 0,
-                buttons: 1,
-                bubbles: true,
-                cancelable: true
-            }));
-
-            console.log('🖱️ Mouse down:', startX, startY);
-
-            let angle = 0;
+            let angle = index * 1.2; // Her spiral farklı açıda başlar
             let radius = 0;
-            let step = 0;
-            const maxSteps = 35;
-
+            let moveCount = 0;
+            const maxMoves = 25 + Math.random() * 10;
+            
             const spiralInterval = setInterval(() => {
-                angle += 0.65;
-                radius += 3.5;
-
-                const x = startX + Math.cos(angle) * radius;
-                const y = startY + Math.sin(angle) * radius;
-
-                canvas.dispatchEvent(new MouseEvent('mousemove', {
-                    clientX: x,
-                    clientY: y,
-                    button: 0,
-                    buttons: 1,
-                    bubbles: true,
-                    cancelable: true
-                }));
-
-                step++;
-                if (step >= maxSteps || radius > 200) {
+                angle += 0.4 + (index * 0.1); // Her spiral farklı hızda döner
+                radius += 2.5 + Math.random();
+                
+                const newX = x + Math.cos(angle) * radius;
+                const newY = y + Math.sin(angle) * radius;
+                
+                simulateMouseMove(newX, newY);
+                moveCount++;
+                
+                if (moveCount > maxMoves || radius > 250) {
                     clearInterval(spiralInterval);
-
-                    canvas.dispatchEvent(new MouseEvent('mouseup', {
-                        clientX: x,
-                        clientY: y,
-                        button: 0,
-                        buttons: 0,
-                        bubbles: true,
-                        cancelable: true
-                    }));
-
-                    console.log('✅ Spiral tamamlandı');
+                    simulateMouseUp(newX, newY);
                 }
             }, 16);
         }
 
-        document.addEventListener("CABLES.jsLoaded", function (event) {
+        // Sayfa yüklendiğinde ve boyut değiştiğinde canvas'ı ayarla
+        window.addEventListener('load', () => {
+            resizeCanvas();
+            setTimeout(resizeCanvas, 100);
+            setTimeout(resizeCanvas, 500);
+            setTimeout(resizeCanvas, 1000);
+        });
+        window.addEventListener('resize', resizeCanvas);
+        
+        // iframe'de yüklendiğinde de resize
+        if (window.parent !== window) {
+            setTimeout(resizeCanvas, 100);
+            setTimeout(resizeCanvas, 500);
+        }
+
+        // Otomatik mouse hareketi için değişkenler
+        let autoMoveActive = false;
+        let autoMoveInterval = null;
+        let lastMouseX = window.innerWidth / 2;
+        let lastMouseY = window.innerHeight / 2;
+        let mouseVelocityX = (Math.random() - 0.5) * 10;
+        let mouseVelocityY = (Math.random() - 0.5) * 10;
+
+        function simulateMouseMove(x, y) {
+            const canvas = document.getElementById('glcanvas');
+            const event = new MouseEvent('mousemove', {
+                view: window,
+                bubbles: true,
+                cancelable: true,
+                clientX: x,
+                clientY: y
+            });
+            canvas.dispatchEvent(event);
+        }
+
+        function simulateMouseDown(x, y) {
+            const canvas = document.getElementById('glcanvas');
+            const event = new MouseEvent('mousedown', {
+                view: window,
+                bubbles: true,
+                cancelable: true,
+                clientX: x,
+                clientY: y,
+                button: 0
+            });
+            canvas.dispatchEvent(event);
+        }
+
+        function simulateMouseUp(x, y) {
+            const canvas = document.getElementById('glcanvas');
+            const event = new MouseEvent('mouseup', {
+                view: window,
+                bubbles: true,
+                cancelable: true,
+                clientX: x,
+                clientY: y,
+                button: 0
+            });
+            canvas.dispatchEvent(event);
+        }
+
+        function startAutoMove() {
+            if (autoMoveInterval) return;
+            
+            autoMoveActive = true;
+            autoMoveInterval = setInterval(() => {
+                // Yumuşak, organik hareket
+                mouseVelocityX += (Math.random() - 0.5) * 2;
+                mouseVelocityY += (Math.random() - 0.5) * 2;
+                
+                // Hız limitleyici
+                mouseVelocityX = Math.max(-8, Math.min(8, mouseVelocityX));
+                mouseVelocityY = Math.max(-8, Math.min(8, mouseVelocityY));
+                
+                lastMouseX += mouseVelocityX;
+                lastMouseY += mouseVelocityY;
+                
+                // Sınırları kontrol et ve sekme efekti
+                if (lastMouseX <= 0 || lastMouseX >= window.innerWidth) {
+                    mouseVelocityX *= -0.8;
+                    lastMouseX = Math.max(0, Math.min(window.innerWidth, lastMouseX));
+                }
+                if (lastMouseY <= 0 || lastMouseY >= window.innerHeight) {
+                    mouseVelocityY *= -0.8;
+                    lastMouseY = Math.max(0, Math.min(window.innerHeight, lastMouseY));
+                }
+                
+                simulateMouseMove(lastMouseX, lastMouseY);
+            }, 16); // ~60 FPS
+        }
+
+        // TÜM overlay elementlerini sürekli temizle
+        function hideAllOverlays() {
+            const allElements = document.querySelectorAll('div, span, p, h1, h2, h3, h4, h5, h6');
+            allElements.forEach(elem => {
+                if (elem.id !== 'glcanvas' && elem.tagName.toLowerCase() !== 'canvas') {
+                    elem.style.display = 'none';
+                    elem.style.visibility = 'hidden';
+                    elem.style.opacity = '0';
+                    elem.style.pointerEvents = 'none';
+                }
+            });
+        }
+
+        function patchInitialized(patch)
+        {
+            resizeCanvas();
+            
+            // Patch yüklendiğinde otomatik hareketi başlat
+            setTimeout(() => {
+                startAutoMove();
+            }, 1000);
+
+            // AGRESIF RESIZE - Cables yüklendikten sonra
+            setTimeout(() => forceCanvasResize(), 100);
+            setTimeout(() => forceCanvasResize(), 500);
+            setTimeout(() => forceCanvasResize(), 1000);
+            setTimeout(() => forceCanvasResize(), 2000);
+
+            // Tüm overlay elementlerini gizle
+            setTimeout(hideAllOverlays, 100);
+            setTimeout(hideAllOverlays, 500);
+            setTimeout(hideAllOverlays, 1000);
+            setTimeout(hideAllOverlays, 2000);
+        }
+
+        function forceCanvasResize() {
+            const canvas = document.getElementById('glcanvas');
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            
+            // Canvas element boyutu
+            canvas.width = w;
+            canvas.height = h;
+            
+            // CSS boyutu
+            canvas.style.width = w + 'px';
+            canvas.style.height = h + 'px';
+            canvas.style.position = 'absolute';
+            canvas.style.top = '0px';
+            canvas.style.left = '0px';
+            
+            // Cables patch'i de resize et
+            if (CABLES.patch && CABLES.patch.cgl) {
+                CABLES.patch.cgl.setSize(w, h);
+            }
+            
+            console.log('🖼️ Canvas FORCED resize:', w, 'x', h);
+        }
+
+        function patchFinishedLoading(patch)
+        {
+            resizeCanvas();
+            hideAllOverlays();
+            
+            // Yükleme bittiğinde de overlay kontrolü yap - sürekli izle
+            const observer = new MutationObserver(() => {
+                hideAllOverlays();
+            });
+            observer.observe(document.body, { 
+                childList: true, 
+                subtree: true,
+                attributes: true,
+                characterData: true
+            });
+
+            // Her 100ms'de bir kontrol et
+            setInterval(hideAllOverlays, 100);
+            
+            console.log('✅ Cables fluid hazır!');
+        }
+
+        // D tuşunu ve diğer ayar tuşlarını engelle
+        // İzin verilen tuşlar listesi
+        const allowedKeys = ['z', 'x', 'c', 'v', 'b', 'n', 'm', 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'];
+        
+        document.addEventListener('keydown', (e) => {
+            const key = e.key.toLowerCase();
+            
+            // Eğer izin verilen tuşlardan değilse, engelle
+            if (!allowedKeys.includes(key)) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                return false;
+            }
+
+            // İzin verilen tuşlara basıldığında fluid efekti
+            const x = Math.random() * window.innerWidth;
+            const y = Math.random() * window.innerHeight;
+            
+            simulateMouseDown(x, y);
+            
+            // Kısa bir süre boyunca etrafında hareket et
+            let moveCount = 0;
+            const moveInterval = setInterval(() => {
+                const angle = (moveCount / 10) * Math.PI * 2;
+                const radius = 50 + moveCount * 3;
+                const newX = x + Math.cos(angle) * radius;
+                const newY = y + Math.sin(angle) * radius;
+                
+                simulateMouseMove(newX, newY);
+                moveCount++;
+                
+                if (moveCount > 15) {
+                    clearInterval(moveInterval);
+                    simulateMouseUp(newX, newY);
+                }
+            }, 16);
+        }, true); // true = capture phase, en önce yakala
+
+        // Keyup eventi de engelle
+        document.addEventListener('keyup', (e) => {
+            const key = e.key.toLowerCase();
+            if (!allowedKeys.includes(key)) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                return false;
+            }
+        }, true);
+
+        // Keypress eventi de engelle
+        document.addEventListener('keypress', (e) => {
+            const key = e.key.toLowerCase();
+            if (!allowedKeys.includes(key)) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                return false;
+            }
+        }, true);
+
+        document.addEventListener("CABLES.jsLoaded", function (event)
+        {
             CABLES.patch = new CABLES.Patch({
                 patch: CABLES.exportedPatch,
                 "prefixAssetPath": "",
@@ -301,7 +501,46 @@
             });
         });
 
+        // Ekrana tıklandığında otomatik hareket toggle
+        document.getElementById('glcanvas').addEventListener('click', (e) => {
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+            
+            if (!autoMoveActive) {
+                startAutoMove();
+            } else {
+                // Tıklanan noktadan spiral hareket
+                const startX = e.clientX;
+                const startY = e.clientY;
+                let angle = 0;
+                let radius = 0;
+                
+                simulateMouseDown(startX, startY);
+                
+                const spiralInterval = setInterval(() => {
+                    angle += 0.3;
+                    radius += 2;
+                    const x = startX + Math.cos(angle) * radius;
+                    const y = startY + Math.sin(angle) * radius;
+                    
+                    simulateMouseMove(x, y);
+                    
+                    if (radius > 150) {
+                        clearInterval(spiralInterval);
+                        simulateMouseUp(x, y);
+                    }
+                }, 16);
+            }
+        });
+
+        // disable rubberband effect on mobile devices
         document.getElementById('glcanvas').addEventListener('touchmove', (e)=>{ e.preventDefault(); }, false);
+
+        // Sayfa yüklendiğinde hemen overlay temizliği başlat
+        document.addEventListener('DOMContentLoaded', () => {
+            resizeCanvas();
+            setInterval(hideAllOverlays, 100);
+        });
     </script>
 </body>
 </html>
