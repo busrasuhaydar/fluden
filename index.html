@@ -1,81 +1,484 @@
-  // Mouse simülasyonu - SPIRAL HAREKET
-        function simulatePianoInput(startX, startY) {
-            const canvas = document.getElementById('glcanvas');
-            if (!canvas) {
-                console.warn('⚠️ Canvas bulunamadı!');
-                return;
-            }
-
-            // Mouse down
-            canvas.dispatchEvent(new MouseEvent('mousedown', {
-                clientX: startX,
-                clientY: startY,
-                button: 0,
-                buttons: 1,
-                bubbles: true,
-                cancelable: true
-            }));
-
-            console.log('🖱️ Mouse down:', startX, startY);
-
-            // Spiral hareket
-            let angle = 0;
-            let radius = 0;
-            let step = 0;
-            const maxSteps = 35;
-
-            const spiralInterval = setInterval(() => {
-                angle += 0.65;
-                radius += 3.5;
-
-                const x = startX + Math.cos(angle) * radius;
-                const y = startY + Math.sin(angle) * radius;
-
-                // Mouse move
-                canvas.dispatchEvent(new MouseEvent('mousemove', {
-                    clientX: x,
-                    clientY: y,
-                    button: 0,
-                    buttons: 1,
-                    bubbles: true,
-                    cancelable: true
-                }));
-
-                step++;
-                if (step >= maxSteps || radius > 200) {
-                    clearInterval(spiralInterval);
-
-                    // Mouse up
-                    canvas.dispatchEvent(new MouseEvent('mouseup', {
-                        clientX: x,
-                        clientY: y,
-                        button: 0,
-                        buttons: 0,
-                        bubbles: true,
-                        cancelable: true
-                    }));
-
-                    console.log('✅ Spiral tamamlandı');
-                }
-            }, 16);
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mouse Hareket Kaydedici</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
-        document.addEventListener("CABLES.jsLoaded", function (event) {
-            CABLES.patch = new CABLES.Patch({
-                patch: CABLES.exportedPatch,
-                "prefixAssetPath": "",
-                "assetPath": "assets/",
-                "jsPath": "js/",
-                "glCanvasId": "glcanvas",
-                "glCanvasResizeToWindow": true,
-                "onError": showError,
-                "onPatchLoaded": patchInitialized,
-                "onFinishedLoading": patchFinishedLoading,
-                "canvas": {"alpha":true, "premultipliedAlpha":true }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 30px;
+            max-width: 900px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .instructions {
+            background: #f0f4ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+
+        .instructions h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .instructions ol {
+            margin-left: 20px;
+        }
+
+        .instructions li {
+            margin: 5px 0;
+            color: #555;
+        }
+
+        .canvas-container {
+            position: relative;
+            background: #1a1a2e;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        #drawCanvas {
+            display: block;
+            width: 100%;
+            height: 400px;
+            cursor: crosshair;
+        }
+
+        .status {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(255,255,255,0.95);
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .status.recording {
+            background: rgba(255,107,107,0.95);
+            color: white;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            flex: 1;
+            min-width: 150px;
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        #startBtn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        #stopBtn {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        #clearBtn {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        #downloadBtn {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+            color: white;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .info-box {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .info-value {
+            color: #555;
+            font-family: 'Courier New', monospace;
+        }
+
+        .preview {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Mouse Hareket Kaydedici</h1>
+        
+        <div class="instructions">
+            <h3>📋 Nasıl Kullanılır:</h3>
+            <ol>
+                <li><strong>"Kaydı Başlat"</strong> butonuna tıkla</li>
+                <li>Siyah alana mouse ile <strong>basılı tutarak</strong> istediğin hareketi çiz (spiral, dalgalı, vs.)</li>
+                <li><strong>"Kaydı Durdur"</strong> butonuna tıkla</li>
+                <li><strong>"JSON İndir"</strong> butonuna tıklayarak kaydettiğin hareketi indir</li>
+                <li>İndirdiğin dosyayı bana gönder! 💕</li>
+            </ol>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="drawCanvas"></canvas>
+            <div class="status" id="status">Hazır</div>
+        </div>
+
+        <div class="controls">
+            <button id="startBtn">🔴 Kaydı Başlat</button>
+            <button id="stopBtn" disabled>⏹️ Kaydı Durdur</button>
+            <button id="clearBtn">🗑️ Temizle</button>
+            <button id="downloadBtn" disabled>💾 JSON İndir</button>
+        </div>
+
+        <div class="info-box">
+            <div class="info-row">
+                <span class="info-label">Kayıtlı Nokta Sayısı:</span>
+                <span class="info-value" id="pointCount">0</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Kayıt Süresi:</span>
+                <span class="info-value" id="duration">0 ms</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Ortalama Hız:</span>
+                <span class="info-value" id="avgSpeed">0 px/frame</span>
+            </div>
+        </div>
+
+        <div class="preview" id="preview">
+            Hareket kaydedildiğinde buraya önizleme gelecek...
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('drawCanvas');
+        const ctx = canvas.getContext('2d');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const status = document.getElementById('status');
+        const pointCount = document.getElementById('pointCount');
+        const duration = document.getElementById('duration');
+        const avgSpeed = document.getElementById('avgSpeed');
+        const preview = document.getElementById('preview');
+
+        // Canvas boyutunu ayarla
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            redraw();
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        let recording = false;
+        let mouseData = [];
+        let isDrawing = false;
+        let startTime = 0;
+
+        // Canvas'ı temizle ve arka planı çiz
+        function clearCanvas() {
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Grid çiz
+            ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < canvas.width; i += 50) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, canvas.height);
+                ctx.stroke();
+            }
+            for (let i = 0; i < canvas.height; i += 50) {
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(canvas.width, i);
+                ctx.stroke();
+            }
+        }
+
+        clearCanvas();
+
+        // Kaydedilmiş çizgileri tekrar çiz
+        function redraw() {
+            clearCanvas();
+            if (mouseData.length > 1) {
+                ctx.strokeStyle = '#667eea';
+                ctx.lineWidth = 3;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                
+                ctx.beginPath();
+                ctx.moveTo(mouseData[0].x, mouseData[0].y);
+                
+                for (let i = 1; i < mouseData.length; i++) {
+                    // Gradient renk
+                    const progress = i / mouseData.length;
+                    const hue = progress * 300;
+                    ctx.strokeStyle = `hsl(${hue}, 70%, 60%)`;
+                    
+                    ctx.lineTo(mouseData[i].x, mouseData[i].y);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(mouseData[i].x, mouseData[i].y);
+                }
+            }
+        }
+
+        // Mouse olayları
+        canvas.addEventListener('mousedown', (e) => {
+            if (!recording) return;
+            
+            isDrawing = true;
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            if (mouseData.length === 0) {
+                startTime = Date.now();
+            }
+            
+            mouseData.push({
+                type: 'mousedown',
+                x: x,
+                y: y,
+                timestamp: Date.now() - startTime
             });
+            
+            updateInfo();
         });
 
-        document.getElementById('glcanvas').addEventListener('touchmove', (e)=>{ e.preventDefault(); }, false);
+        canvas.addEventListener('mousemove', (e) => {
+            if (!recording || !isDrawing) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            mouseData.push({
+                type: 'mousemove',
+                x: x,
+                y: y,
+                timestamp: Date.now() - startTime
+            });
+            
+            redraw();
+            updateInfo();
+        });
+
+        canvas.addEventListener('mouseup', (e) => {
+            if (!recording || !isDrawing) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            mouseData.push({
+                type: 'mouseup',
+                x: x,
+                y: y,
+                timestamp: Date.now() - startTime
+            });
+            
+            isDrawing = false;
+            updateInfo();
+            updatePreview();
+        });
+
+        // Buton olayları
+        startBtn.addEventListener('click', () => {
+            recording = true;
+            mouseData = [];
+            clearCanvas();
+            
+            status.textContent = '🔴 Kaydediliyor...';
+            status.classList.add('recording');
+            
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+            downloadBtn.disabled = true;
+        });
+
+        stopBtn.addEventListener('click', () => {
+            recording = false;
+            isDrawing = false;
+            
+            status.textContent = '✅ Kayıt Tamamlandı';
+            status.classList.remove('recording');
+            
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            downloadBtn.disabled = mouseData.length === 0;
+            
+            updatePreview();
+        });
+
+        clearBtn.addEventListener('click', () => {
+            mouseData = [];
+            clearCanvas();
+            updateInfo();
+            preview.textContent = 'Hareket kaydedildiğinde buraya önizleme gelecek...';
+            downloadBtn.disabled = true;
+        });
+
+        downloadBtn.addEventListener('click', () => {
+            const data = {
+                recordingInfo: {
+                    totalPoints: mouseData.length,
+                    duration: mouseData.length > 0 ? mouseData[mouseData.length - 1].timestamp : 0,
+                    canvasWidth: canvas.width,
+                    canvasHeight: canvas.height,
+                    recordedAt: new Date().toISOString()
+                },
+                movements: mouseData
+            };
+            
+            const json = JSON.stringify(data, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `mouse_movement_${Date.now()}.json`;
+            a.click();
+            
+            URL.revokeObjectURL(url);
+        });
+
+        // Bilgileri güncelle
+        function updateInfo() {
+            pointCount.textContent = mouseData.length;
+            
+            if (mouseData.length > 0) {
+                const lastTime = mouseData[mouseData.length - 1].timestamp;
+                duration.textContent = `${lastTime} ms`;
+                
+                // Ortalama hız hesapla
+                let totalDistance = 0;
+                for (let i = 1; i < mouseData.length; i++) {
+                    const dx = mouseData[i].x - mouseData[i-1].x;
+                    const dy = mouseData[i].y - mouseData[i-1].y;
+                    totalDistance += Math.sqrt(dx*dx + dy*dy);
+                }
+                const avgSpd = mouseData.length > 1 ? (totalDistance / (mouseData.length - 1)).toFixed(2) : 0;
+                avgSpeed.textContent = `${avgSpd} px/frame`;
+            } else {
+                duration.textContent = '0 ms';
+                avgSpeed.textContent = '0 px/frame';
+            }
+        }
+
+        // Önizleme güncelle
+        function updatePreview() {
+            if (mouseData.length === 0) {
+                preview.textContent = 'Hareket kaydedildiğinde buraya önizleme gelecek...';
+                return;
+            }
+            
+            let previewText = `// İlk 10 nokta:\n`;
+            const previewCount = Math.min(10, mouseData.length);
+            
+            for (let i = 0; i < previewCount; i++) {
+                const point = mouseData[i];
+                previewText += `${i}: {type: "${point.type}", x: ${point.x.toFixed(1)}, y: ${point.y.toFixed(1)}, time: ${point.timestamp}ms}\n`;
+            }
+            
+            if (mouseData.length > 10) {
+                previewText += `\n... ve ${mouseData.length - 10} nokta daha\n`;
+            }
+            
+            preview.textContent = previewText;
+        }
     </script>
 </body>
 </html>
