@@ -278,84 +278,60 @@
             let currentX = startX;
             let currentY = startY;
             
+            // İLK RENK SET ET
             setPianoColor(colors[0]);
             
-            // ÖNCE HAREKET BAŞLAT, SONRA MOUSEDOWN
-            let preStartSteps = 0;
-            const maxPreSteps = 8;
+            // MOUSEDOWN YAP
+            canvas.dispatchEvent(new MouseEvent('mousedown', {
+                clientX: currentX,
+                clientY: currentY,
+                button: 0,
+                buttons: 1,
+                bubbles: true,
+                cancelable: true
+            }));
             
-            const preInterval = setInterval(() => {
-                preStartSteps++;
+            console.log('🖱️ Mouse down:', currentX, currentY);
+            
+            // ANA LOOP - HEMEN BAŞLA!
+            const interval = setInterval(() => {
+                step++;
                 
-                const preMove = calculatePosition(startX, startY, preStartSteps, pattern, width, height, noiseOffsetX, noiseOffsetY, prevVelX, prevVelY);
-                currentX = preMove.x;
-                currentY = preMove.y;
-                prevVelX = preMove.velX || 0;
-                prevVelY = preMove.velY || 0;
+                // 🎨 HER ADIMDA RENK DEĞİŞTİR!
+                colorIndex = (colorIndex + 1) % colors.length;
+                setPianoColor(colors[colorIndex]);
                 
-                if (preStartSteps >= maxPreSteps) {
-                    clearInterval(preInterval);
+                const newPos = calculatePosition(startX, startY, step, pattern, width, height, noiseOffsetX, noiseOffsetY, prevVelX, prevVelY);
+                
+                currentX = newPos.x;
+                currentY = newPos.y;
+                prevVelX = newPos.velX || 0;
+                prevVelY = newPos.velY || 0;
+                
+                canvas.dispatchEvent(new MouseEvent('mousemove', {
+                    clientX: currentX,
+                    clientY: currentY,
+                    button: 0,
+                    buttons: 1,
+                    bubbles: true,
+                    cancelable: true
+                }));
+                
+                if (step >= maxSteps) {
+                    clearInterval(interval);
                     
-                    // ŞİMDİ MOUSEDOWN YAP
-                    canvas.dispatchEvent(new MouseEvent('mousedown', {
+                    canvas.dispatchEvent(new MouseEvent('mouseup', {
                         clientX: currentX,
                         clientY: currentY,
                         button: 0,
-                        buttons: 1,
-                        bubbles: true
+                        buttons: 0,
+                        bubbles: true,
+                        cancelable: true
                     }));
                     
-                    setTimeout(() => {
-                        const nextMove = calculatePosition(startX, startY, maxPreSteps + 1, pattern, width, height, noiseOffsetX, noiseOffsetY, prevVelX, prevVelY);
-                        canvas.dispatchEvent(new MouseEvent('mousemove', {
-                            clientX: nextMove.x,
-                            clientY: nextMove.y,
-                            button: 0,
-                            buttons: 1,
-                            bubbles: true
-                        }));
-                        
-                        startMainLoop();
-                    }, 1);
+                    console.log('✅ Fluid tamamlandı');
                 }
-            }, 30);
-            
-            function startMainLoop() {
-                const interval = setInterval(() => {
-                    step++;
-                    
-                    // 🎨 HER ADIMDA RENK DEĞİŞTİR!
-                    colorIndex = (colorIndex + 1) % colors.length;
-                    setPianoColor(colors[colorIndex]);
-                    
-                    const newPos = calculatePosition(startX, startY, step + maxPreSteps, pattern, width, height, noiseOffsetX, noiseOffsetY, prevVelX, prevVelY);
-                    
-                    currentX = newPos.x;
-                    currentY = newPos.y;
-                    prevVelX = newPos.velX || 0;
-                    prevVelY = newPos.velY || 0;
-                    
-                    canvas.dispatchEvent(new MouseEvent('mousemove', {
-                        clientX: currentX,
-                        clientY: currentY,
-                        button: 0,
-                        buttons: 1,
-                        bubbles: true
-                    }));
-                    
-                    if (step >= maxSteps) {
-                        clearInterval(interval);
-                        
-                        canvas.dispatchEvent(new MouseEvent('mouseup', {
-                            clientX: currentX,
-                            clientY: currentY,
-                            button: 0,
-                            buttons: 0,
-                            bubbles: true
-                        }));
-                    }
-                }, 35);
-            }
+            }, 35);
         }
 
         function calculatePosition(startX, startY, step, pattern, width, height, noiseX, noiseY, prevVelX, prevVelY) {
