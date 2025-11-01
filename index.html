@@ -1,534 +1,611 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Piano Fluid - Living Art</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Piano Renk Seçici</title>
     <style>
         * {
-            margin: 0 !important;
-            padding: 0 !important;
-            -webkit-tap-highlight-color: transparent;
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
-            box-sizing: border-box !important;
-        }
-
-        html {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
         body {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background-color: transparent !important;
-            color: #fff;
-            font-family: Helvetica, Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            gap: 20px;
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 350px;
+            height: fit-content;
+        }
+
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .current-key {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .current-key-label {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .current-key-name {
+            font-size: 32px;
+            font-weight: bold;
+        }
+
+        .color-count {
+            font-size: 14px;
+            margin-top: 5px;
+            opacity: 0.9;
+        }
+
+        .color-picker-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .color-input-wrapper {
+            flex: 1;
             position: relative;
         }
 
-        #glcanvas {
-            display: block !important;
-            position: absolute !important;
-            top: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            bottom: 0 !important;
-            width: 100% !important;
-            height: 100% !important;
-            outline: 0 !important;
-            transform: none !important;
-            background: transparent !important;
+        input[type="color"] {
+            width: 100%;
+            height: 50px;
+            border: 3px solid #667eea;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s;
         }
 
-        div[style*="position: absolute"],
-        div[style*="fixed"],
-        .cables-stats,
-        .stats-panel {
-            display: none !important;
-            visibility: hidden !important;
+        input[type="color"]:hover {
+            transform: scale(1.05);
+        }
+
+        .add-color-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .add-color-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .add-color-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .selected-colors {
+            margin-bottom: 20px;
+        }
+
+        .selected-colors-title {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .color-list {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 5px;
+        }
+
+        .color-item {
+            position: relative;
+            width: 100%;
+            padding-bottom: 100%;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            border: 2px solid rgba(0,0,0,0.1);
+        }
+
+        .color-item:hover {
+            transform: scale(1.1);
+            z-index: 10;
+        }
+
+        .color-item-inner {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .remove-color {
+            display: none;
+            background: rgba(255, 255, 255, 0.9);
+            color: #ff4757;
+            border: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .color-item:hover .remove-color {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .undo-btn {
+            background: #ffa502;
+            color: white;
+        }
+
+        .undo-btn:hover {
+            background: #ff7f00;
+        }
+
+        .next-key-btn {
+            background: #2ed573;
+            color: white;
+        }
+
+        .next-key-btn:hover {
+            background: #26de81;
+        }
+
+        .action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .export-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #eee;
+        }
+
+        .export-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(245, 87, 108, 0.4);
+        }
+
+        .keys-list {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow-y: auto;
+            max-height: calc(100vh - 40px);
+        }
+
+        .keys-list-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .key-entry {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .key-entry.active {
+            border-color: #667eea;
+            background: #e8eaf6;
+        }
+
+        .key-entry-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .key-name {
+            font-weight: bold;
+            font-size: 18px;
+            color: #333;
+        }
+
+        .key-color-count {
+            color: #667eea;
+            font-size: 14px;
+        }
+
+        .key-colors {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .key-color-dot {
+            width: 30px;
+            height: 30px;
+            border-radius: 6px;
+            border: 2px solid rgba(0,0,0,0.1);
+        }
+
+        .output-area {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .copy-btn {
+            margin-top: 10px;
+            width: 100%;
+            padding: 10px;
+            background: #5f27cd;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .copy-btn:hover {
+            background: #341f97;
+        }
+
+        .instructions {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #856404;
+        }
+
+        .instructions strong {
+            color: #856404;
         }
     </style>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
 </head>
 <body>
-    <canvas id="glcanvas" tabindex="1"></canvas>
-    <script type="text/javascript" src="js/patch.js" async></script>
-    <script type="text/javascript">
+    <div class="panel">
+        <div class="title">🎹 Piyano Renk Seçici</div>
+        
+        <div class="instructions">
+            <strong>Nasıl Kullanılır:</strong><br>
+            1. Damlalık ile PNG'den renk seç<br>
+            2. "Renk Ekle" ile listeye ekle (max 10)<br>
+            3. Yanlış renk varsa üzerine tıkla<br>
+            4. "Sonraki Tuş" ile ilerle<br>
+            5. Tamamlayınca "JSON İndir" 📥
+        </div>
 
-        function showError(initiator,...args) {}
+        <div class="current-key">
+            <div class="current-key-label">Şu Anki Tuş</div>
+            <div class="current-key-name" id="currentKeyName">C</div>
+            <div class="color-count"><span id="colorCount">0</span> / 10 renk</div>
+        </div>
 
-        let parentWidth = window.innerWidth;
-        let parentHeight = window.innerHeight;
+        <div class="color-picker-container">
+            <div class="color-input-wrapper">
+                <input type="color" id="colorPicker" value="#ff69b4">
+            </div>
+            <button class="add-color-btn" id="addColorBtn">
+                Renk Ekle
+            </button>
+        </div>
 
-        if (window.parent !== window) {
-            try {
-                parentWidth = window.parent.innerWidth;
-                parentHeight = window.parent.innerHeight;
-            } catch(e) {}
-        }
+        <div class="selected-colors">
+            <div class="selected-colors-title">Seçilen Renkler</div>
+            <div class="color-list" id="colorList"></div>
+        </div>
 
-        function forceFullScreenCanvas() {
-            const canvas = document.getElementById('glcanvas');
-            if (!canvas) return;
-            
-            const width = parentWidth || window.innerWidth || document.documentElement.clientWidth;
-            const height = parentHeight || window.innerHeight || document.documentElement.clientHeight;
-            
-            canvas.width = width;
-            canvas.height = height;
-            canvas.style.width = width + 'px';
-            canvas.style.height = height + 'px';
-            canvas.style.position = 'absolute';
-            canvas.style.top = '0';
-            canvas.style.left = '0';
-        }
+        <div class="actions">
+            <button class="action-btn undo-btn" id="undoBtn" disabled>
+                ↶ Geri Al
+            </button>
+            <button class="action-btn next-key-btn" id="nextKeyBtn">
+                Sonraki Tuş →
+            </button>
+        </div>
 
-        function patchInitialized(patch) {
-            console.log('✅ Fluid hazır!');
-            hideStatsPanels();
-            forceFullScreenCanvas();
-            
-            setTimeout(forceFullScreenCanvas, 100);
-            setTimeout(forceFullScreenCanvas, 500);
-            setTimeout(forceFullScreenCanvas, 1000);
-            setTimeout(forceFullScreenCanvas, 2000);
-        }
+        <div class="export-section">
+            <button class="export-btn" id="exportBtn">
+                📥 JSON İndir (Tüm Renkler)
+            </button>
+            <div class="output-area" id="outputArea"></div>
+            <button class="copy-btn" id="copyBtn" style="display: none;">
+                📋 Kopyala
+            </button>
+        </div>
+    </div>
 
-        function patchFinishedLoading(patch) {
-            console.log('🎨 Yükleme tamamlandı!');
-            hideStatsPanels();
-            forceFullScreenCanvas();
-        }
+    <div class="keys-list">
+        <div class="keys-list-title">🎼 Tüm Tuşlar</div>
+        <div id="keysListContainer"></div>
+    </div>
 
-        function hideStatsPanels() {
-            setTimeout(() => {
-                const statsDivs = document.querySelectorAll('div');
-                statsDivs.forEach(div => {
-                    const style = div.getAttribute('style');
-                    if (style && (style.includes('position: absolute') || style.includes('position: fixed'))) {
-                        div.style.display = 'none';
-                        div.style.visibility = 'hidden';
-                    }
-                });
-            }, 100);
-        }
-
-        // 🎨 PNG'DEN EN BASKIN VE CANLI RENKLERİ ÇOK DİKKATLİ SEÇ
-        function selectBestColors(colors) {
-            if (!colors || colors.length === 0) {
-                return [
-                    {r: 255, g: 80, b: 180},
-                    {r: 80, g: 180, b: 255},
-                    {r: 255, g: 180, b: 80}
-                ];
-            }
-
-            // 1. ADIM: Çok soluk ve çok koyu renkleri filtrele
-            const validColors = colors.filter(c => {
-                const brightness = (c.r + c.g + c.b) / 3;
-                const saturation = Math.max(c.r, c.g, c.b) - Math.min(c.r, c.g, c.b);
-                
-                // Orta parlaklık ve yüksek saturation
-                return brightness > 70 && brightness < 190 && saturation > 60;
-            });
-
-            if (validColors.length === 0) {
-                // Fallback: sadece saturation'a bak
-                const fallback = colors.filter(c => {
-                    const sat = Math.max(c.r, c.g, c.b) - Math.min(c.r, c.g, c.b);
-                    return sat > 50;
-                }).slice(0, 3);
-                
-                return fallback.map(c => makeVibrant(c));
-            }
-
-            // 2. ADIM: Renkleri HSL'ye çevir ve grupla
-            const colorGroups = new Map();
-            
-            validColors.forEach(c => {
-                const hsl = rgbToHsl(c.r, c.g, c.b);
-                // Hue'ya göre grupla (30 derecelik aralıklar)
-                const hueGroup = Math.round(hsl.h / 30) * 30;
-                const key = `${hueGroup}`;
-                
-                if (!colorGroups.has(key)) {
-                    colorGroups.set(key, []);
-                }
-                colorGroups.get(key).push({ color: c, hsl: hsl });
-            });
-
-            // 3. ADIM: Her gruptan EN BASKIN rengi al
-            const dominantColors = [];
-            
-            for (const [hueGroup, groupColors] of colorGroups.entries()) {
-                // Grup içinde en doygun ve en parlak olanı seç
-                const best = groupColors.sort((a, b) => {
-                    const scoreA = a.hsl.s * 0.7 + a.hsl.l * 0.3;
-                    const scoreB = b.hsl.s * 0.7 + b.hsl.l * 0.3;
-                    return scoreB - scoreA;
-                })[0];
-                
-                dominantColors.push({
-                    color: best.color,
-                    hsl: best.hsl,
-                    count: groupColors.length // Kaç piksel var bu renkte
-                });
-            }
-
-            // 4. ADIM: En yaygın 3-5 rengi al
-            const finalColors = dominantColors
-                .sort((a, b) => b.count - a.count) // En yaygın olanlar önce
-                .slice(0, 4) // En fazla 4 renk
-                .map(item => makeVibrant(item.color)); // Hepsini vibrant yap
-
-            console.log(`🎨 ${finalColors.length} baskın renk seçildi`);
-            return finalColors;
-        }
-
-        // RGB'yi HSL'ye çevir
-        function rgbToHsl(r, g, b) {
-            r /= 255; g /= 255; b /= 255;
-            
-            const max = Math.max(r, g, b);
-            const min = Math.min(r, g, b);
-            let h, s, l = (max + min) / 2;
-
-            if (max === min) {
-                h = s = 0;
-            } else {
-                const d = max - min;
-                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-                
-                switch (max) {
-                    case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
-                    case g: h = ((b - r) / d + 2) / 6; break;
-                    case b: h = ((r - g) / d + 4) / 6; break;
-                }
-            }
-
-            return { h: h * 360, s: s, l: l };
-        }
-
-        // Rengi SÜREKLI VİBRANT tut
-        function makeVibrant(color) {
-            const hsl = rgbToHsl(color.r, color.g, color.b);
-            
-            // Saturation'ı maksimuma çek (0.9+)
-            hsl.s = Math.max(0.85, hsl.s);
-            
-            // Lightness'ı ideal aralığa getir (0.45-0.55)
-            if (hsl.l < 0.45) hsl.l = 0.45;
-            if (hsl.l > 0.55) hsl.l = 0.55;
-            
-            // HSL'yi tekrar RGB'ye çevir
-            return hslToRgb(hsl.h, hsl.s, hsl.l);
-        }
-
-        // HSL'yi RGB'ye çevir
-        function hslToRgb(h, s, l) {
-            h /= 360;
-            
-            let r, g, b;
-
-            if (s === 0) {
-                r = g = b = l;
-            } else {
-                const hue2rgb = (p, q, t) => {
-                    if (t < 0) t += 1;
-                    if (t > 1) t -= 1;
-                    if (t < 1/6) return p + (q - p) * 6 * t;
-                    if (t < 1/2) return q;
-                    if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-                    return p;
-                };
-
-                const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-                const p = 2 * l - q;
-                
-                r = hue2rgb(p, q, h + 1/3);
-                g = hue2rgb(p, q, h);
-                b = hue2rgb(p, q, h - 1/3);
-            }
-
-            return {
-                r: Math.round(r * 255),
-                g: Math.round(g * 255),
-                b: Math.round(b * 255)
-            };
-        }
-
-        // 🌊 HAREKET PATTERNLERİ
-        const FLOW_PATTERNS = [
-            { type: 'circle', radius: 160, clockwise: true },
-            { type: 'circle', radius: 160, clockwise: false },
-            { type: 'circle', radius: 130, clockwise: true },
-            { type: 'spiral', startRadius: 50, endRadius: 150, clockwise: true },
-            { type: 'spiral', startRadius: 150, endRadius: 50, clockwise: false },
-            { type: 's_curve', amplitude: 90, length: 320 },
-            { type: 'wave', amplitude: 80, wavelength: 220, length: 360 }
+    <script>
+        // Tüm piyano tuşları
+        const PIANO_KEYS = [
+            'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B',
+            'C2', 'C#2', 'D2', 'D#2', 'E2', 'F2', 'F#2', 'G2', 'G#2', 'A2', 'A#2', 'B2',
+            'C3'
         ];
 
-        // 🎹 PİYANO MESAJ SİSTEMİ
-        window.addEventListener('message', (event) => {
-            if (event.data.type === 'pianoKeyPress') {
-                const colors = event.data.colors || [];
-                const key = event.data.key;
-                
-                if (colors.length === 0) return;
-                
-                const bestColors = selectBestColors(colors);
-                if (bestColors.length === 0) return;
-                
-                console.log(`🎹 ${key.toUpperCase()} → ${bestColors.length} dominant colors`);
-                
-                const pattern = FLOW_PATTERNS[Math.floor(Math.random() * FLOW_PATTERNS.length)];
-                
-                const startX = Math.random() * 0.3 * parentWidth + 0.35 * parentWidth;
-                const startY = Math.random() * 0.3 * parentHeight + 0.35 * parentHeight;
-                
-                createFluidFlow(startX, startY, bestColors, pattern);
-            }
+        let currentKeyIndex = 0;
+        let keyColors = {};
+        let history = [];
+
+        // Her tuş için boş array oluştur
+        PIANO_KEYS.forEach(key => {
+            keyColors[key] = [];
         });
 
-        function setPianoColor(color) {
-            if (typeof CABLES === 'undefined' || !CABLES.patch) return;
-            
-            try {
-                // Rengi VIBRANT tut
-                const vibrantColor = makeVibrant(color);
-                
-                const normalizedColor = [
-                    vibrantColor.r / 255,
-                    vibrantColor.g / 255,
-                    vibrantColor.b / 255
-                ];
-                CABLES.patch.setVariable('SplatColor', normalizedColor);
-            } catch(e) {}
+        const colorPicker = document.getElementById('colorPicker');
+        const addColorBtn = document.getElementById('addColorBtn');
+        const undoBtn = document.getElementById('undoBtn');
+        const nextKeyBtn = document.getElementById('nextKeyBtn');
+        const exportBtn = document.getElementById('exportBtn');
+        const copyBtn = document.getElementById('copyBtn');
+        const colorList = document.getElementById('colorList');
+        const currentKeyName = document.getElementById('currentKeyName');
+        const colorCount = document.getElementById('colorCount');
+        const outputArea = document.getElementById('outputArea');
+        const keysListContainer = document.getElementById('keysListContainer');
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : null;
         }
 
-        // 🎨 RENK BLENDING - VİBRANT KAL
-        function blendColors(color1, color2, ratio) {
-            const blended = {
-                r: Math.round(color1.r * (1 - ratio) + color2.r * ratio),
-                g: Math.round(color1.g * (1 - ratio) + color2.g * ratio),
-                b: Math.round(color1.b * (1 - ratio) + color2.b * ratio)
-            };
-            
-            // Blend edilmiş rengi de vibrant yap
-            return makeVibrant(blended);
-        }
+        function updateUI() {
+            const currentKey = PIANO_KEYS[currentKeyIndex];
+            const colors = keyColors[currentKey];
 
-        // 🌊 FLUID AKIŞI - YUMUŞAK BAŞLANGIÇ
-        function createFluidFlow(startX, startY, colors, pattern) {
-            const canvas = document.getElementById('glcanvas');
-            if (!canvas) return;
-            
-            const width = parentWidth || window.innerWidth;
-            const height = parentHeight || window.innerHeight;
-            
-            // SABİT SÜRE: 200 frame × 18ms = 3.6 saniye
-            const TOTAL_FRAMES = 200;
-            const FRAME_DURATION = 18;
-            
-            let frameIndex = 0;
-            
-            // Path hesapla
-            const basePath = generateBasePath(startX, startY, pattern, width, height, TOTAL_FRAMES);
-            
-            // İlk rengi set et
-            setPianoColor(colors[0]);
-            
-            // ÇÖZÜM: İlk mousedown'ı path'in daha ilerisinde yap
-            // İlk %20'sini atla - böylece patlama olmaz
-            const startFrame = Math.floor(basePath.length * 0.2);
-            let currentX = basePath[startFrame].x;
-            let currentY = basePath[startFrame].y;
-            
-            console.log(`🎨 Fluid başlıyor: frame ${startFrame}/${TOTAL_FRAMES}, ${colors.length} renk`);
-            
-            // MOUSEDOWN - ama uzak bir noktadan
-            canvas.dispatchEvent(new MouseEvent('mousedown', {
-                clientX: currentX,
-                clientY: currentY,
-                button: 0,
-                buttons: 1,
-                bubbles: true
-            }));
-            
-            // Hemen hareket başlat - ama yumuşak
-            setTimeout(() => {
-                // ANA ANİMASYON
-                const animationInterval = setInterval(() => {
-                    frameIndex++;
-                    
-                    if (frameIndex >= TOTAL_FRAMES - startFrame) {
-                        clearInterval(animationInterval);
-                        
-                        // MOUSEUP
-                        canvas.dispatchEvent(new MouseEvent('mouseup', {
-                            clientX: currentX,
-                            clientY: currentY,
-                            button: 0,
-                            buttons: 0,
-                            bubbles: true
-                        }));
-                        
-                        console.log('✅ Fluid tamamlandı');
-                        return;
-                    }
-                    
-                    const actualFrame = frameIndex + startFrame;
-                    
-                    // RENK BLENDING - smooth ve vibrant
-                    const progress = frameIndex / (TOTAL_FRAMES - startFrame);
-                    const colorProgress = progress * (colors.length - 1);
-                    const colorIndex = Math.floor(colorProgress);
-                    const colorBlend = colorProgress - colorIndex;
-                    
-                    if (colorIndex < colors.length - 1) {
-                        const blendedColor = blendColors(
-                            colors[colorIndex], 
-                            colors[colorIndex + 1], 
-                            colorBlend
-                        );
-                        setPianoColor(blendedColor);
-                    } else {
-                        setPianoColor(colors[colors.length - 1]);
-                    }
-                    
-                    // YENİ POZİSYON
-                    if (actualFrame < basePath.length) {
-                        currentX = basePath[actualFrame].x;
-                        currentY = basePath[actualFrame].y;
-                        
-                        currentX = Math.max(20, Math.min(width - 20, currentX));
-                        currentY = Math.max(20, Math.min(height - 20, currentY));
-                        
-                        // MOUSEMOVE
-                        canvas.dispatchEvent(new MouseEvent('mousemove', {
-                            clientX: currentX,
-                            clientY: currentY,
-                            button: 0,
-                            buttons: 1,
-                            bubbles: true
-                        }));
-                    }
-                    
-                }, FRAME_DURATION);
-            }, 40); // Daha kısa bekleme - ama yeterli smooth başlangıç için
-        }
+            currentKeyName.textContent = currentKey;
+            colorCount.textContent = colors.length;
 
-        // 🎨 PATH GENERATOR
-        function generateBasePath(startX, startY, pattern, width, height, pointCount) {
-            const points = [];
-            
-            const noiseOffsetX = Math.random() * 1000;
-            const noiseOffsetY = Math.random() * 1000;
-            
-            for (let i = 0; i < pointCount; i++) {
-                const t = i / pointCount;
-                let x, y;
-                
-                const noiseScale = 0.025;
-                const noiseX = (Math.sin(i * noiseScale + noiseOffsetX) + 
-                               Math.sin(i * noiseScale * 2.3 + noiseOffsetX * 1.4)) * 10;
-                const noiseY = (Math.cos(i * noiseScale + noiseOffsetY) + 
-                               Math.cos(i * noiseScale * 1.9 + noiseOffsetY * 1.7)) * 10;
-                
-                switch(pattern.type) {
-                    case 'circle':
-                        const angleCircle = t * Math.PI * 2 * (pattern.clockwise ? 1 : -1);
-                        const breathe = 1 + Math.sin(t * Math.PI * 2.5) * 0.1;
-                        x = startX + Math.cos(angleCircle) * pattern.radius * breathe + noiseX;
-                        y = startY + Math.sin(angleCircle) * pattern.radius * breathe + noiseY;
-                        break;
-                        
-                    case 'spiral':
-                        const angleSpiral = t * Math.PI * 4 * (pattern.clockwise ? 1 : -1);
-                        const radiusSpiral = pattern.startRadius + 
-                                            (pattern.endRadius - pattern.startRadius) * t;
-                        x = startX + Math.cos(angleSpiral) * radiusSpiral + noiseX;
-                        y = startY + Math.sin(angleSpiral) * radiusSpiral + noiseY;
-                        break;
-                        
-                    case 's_curve':
-                        x = startX + (t - 0.5) * pattern.length + noiseX;
-                        y = startY + Math.sin(t * Math.PI * 2) * pattern.amplitude + noiseY;
-                        break;
-                        
-                    case 'wave':
-                        const waveProgress = t * pattern.length;
-                        x = startX + waveProgress * Math.cos(Math.PI / 6) + noiseX;
-                        y = startY + waveProgress * Math.sin(Math.PI / 6) + 
-                            Math.sin(waveProgress / pattern.wavelength * Math.PI * 2) * pattern.amplitude + noiseY;
-                        break;
-                        
-                    default:
-                        x = startX + t * 100;
-                        y = startY + t * 100;
-                }
-                
-                points.push({ x, y });
-            }
-            
-            return points;
-        }
-
-        window.addEventListener('DOMContentLoaded', () => {
-            forceFullScreenCanvas();
-        });
-
-        document.addEventListener("CABLES.jsLoaded", function (event) {
-            forceFullScreenCanvas();
-            
-            CABLES.patch = new CABLES.Patch({
-                patch: CABLES.exportedPatch,
-                "prefixAssetPath": "",
-                "assetPath": "assets/",
-                "jsPath": "js/",
-                "glCanvasId": "glcanvas",
-                "glCanvasResizeToWindow": true,
-                "onError": showError,
-                "onPatchLoaded": patchInitialized,
-                "onFinishedLoading": patchFinishedLoading,
-                "canvas": {"alpha":true, "premultipliedAlpha":true }
+            // Renk listesini güncelle
+            colorList.innerHTML = '';
+            colors.forEach((color, index) => {
+                const colorItem = document.createElement('div');
+                colorItem.className = 'color-item';
+                colorItem.innerHTML = `
+                    <div class="color-item-inner" style="background: ${color.hex}">
+                        <button class="remove-color">×</button>
+                    </div>
+                `;
+                colorItem.querySelector('.remove-color').onclick = () => removeColor(index);
+                colorList.appendChild(colorItem);
             });
+
+            // Butonları güncelle
+            addColorBtn.disabled = colors.length >= 10;
+            undoBtn.disabled = history.length === 0;
+
+            // Tuş listesini güncelle
+            updateKeysList();
+        }
+
+        function updateKeysList() {
+            keysListContainer.innerHTML = '';
+            PIANO_KEYS.forEach((key, index) => {
+                const colors = keyColors[key];
+                const entry = document.createElement('div');
+                entry.className = 'key-entry' + (index === currentKeyIndex ? ' active' : '');
+                
+                const colorsHTML = colors.map(c => 
+                    `<div class="key-color-dot" style="background: ${c.hex}"></div>`
+                ).join('');
+
+                entry.innerHTML = `
+                    <div class="key-entry-header">
+                        <div class="key-name">${key}</div>
+                        <div class="key-color-count">${colors.length} renk</div>
+                    </div>
+                    <div class="key-colors">${colorsHTML || '<span style="color: #999; font-size: 12px;">Henüz renk seçilmedi</span>'}</div>
+                `;
+                
+                entry.onclick = () => {
+                    currentKeyIndex = index;
+                    updateUI();
+                };
+                
+                keysListContainer.appendChild(entry);
+            });
+        }
+
+        function addColor() {
+            const currentKey = PIANO_KEYS[currentKeyIndex];
+            const colors = keyColors[currentKey];
             
-            hideStatsPanels();
-            setTimeout(forceFullScreenCanvas, 50);
+            if (colors.length >= 10) return;
+
+            const hex = colorPicker.value;
+            const rgb = hexToRgb(hex);
+
+            // History'ye ekle
+            history.push({
+                key: currentKey,
+                action: 'add',
+                color: { hex, rgb }
+            });
+
+            colors.push({ hex, rgb });
+            updateUI();
+        }
+
+        function removeColor(index) {
+            const currentKey = PIANO_KEYS[currentKeyIndex];
+            const colors = keyColors[currentKey];
+            const removedColor = colors[index];
+
+            // History'ye ekle
+            history.push({
+                key: currentKey,
+                action: 'remove',
+                index: index,
+                color: removedColor
+            });
+
+            colors.splice(index, 1);
+            updateUI();
+        }
+
+        function undo() {
+            if (history.length === 0) return;
+
+            const lastAction = history.pop();
+            const colors = keyColors[lastAction.key];
+
+            if (lastAction.action === 'add') {
+                colors.pop();
+            } else if (lastAction.action === 'remove') {
+                colors.splice(lastAction.index, 0, lastAction.color);
+            }
+
+            updateUI();
+        }
+
+        function nextKey() {
+            if (currentKeyIndex < PIANO_KEYS.length - 1) {
+                currentKeyIndex++;
+                updateUI();
+            }
+        }
+
+        function exportColors() {
+            const data = {};
+            
+            PIANO_KEYS.forEach(key => {
+                data[key] = keyColors[key].map(c => c.rgb);
+            });
+
+            const json = JSON.stringify(data, null, 2);
+            
+            // JSON'u göster
+            outputArea.textContent = json;
+            copyBtn.style.display = 'block';
+
+            // JSON dosyası olarak indir
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'piano-colors.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function copyToClipboard() {
+            navigator.clipboard.writeText(outputArea.textContent);
+            copyBtn.textContent = '✅ Kopyalandı!';
+            setTimeout(() => {
+                copyBtn.textContent = '📋 Kopyala';
+            }, 2000);
+        }
+
+        // Event listeners
+        addColorBtn.onclick = addColor;
+        undoBtn.onclick = undo;
+        nextKeyBtn.onclick = nextKey;
+        exportBtn.onclick = exportColors;
+        copyBtn.onclick = copyToClipboard;
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') addColor();
+            if (e.key === 'ArrowRight') nextKey();
+            if (e.ctrlKey && e.key === 'z') undo();
         });
 
-        document.getElementById('glcanvas').addEventListener('touchmove', (e)=>{ e.preventDefault(); }, false);
-        
-        setInterval(hideStatsPanels, 1000);
-        setInterval(forceFullScreenCanvas, 2000);
-        
-        window.addEventListener('resize', () => {
-            try {
-                if (window.parent !== window) {
-                    parentWidth = window.parent.innerWidth;
-                    parentHeight = window.parent.innerHeight;
-                }
-            } catch(e) {
-                parentWidth = window.innerWidth;
-                parentHeight = window.innerHeight;
-            }
-            forceFullScreenCanvas();
-        });
-
-        window.addEventListener('message', (event) => {
-            if (event.data.type === 'parentResize') {
-                parentWidth = event.data.width;
-                parentHeight = event.data.height;
-                forceFullScreenCanvas();
-            }
-        });
+        // İlk yükleme
+        updateUI();
     </script>
 </body>
 </html>
