@@ -138,31 +138,25 @@
                 ];
             }
 
-            // Sadece en canlı, doygun renkleri al
             const vibrantColors = colors.filter(c => {
                 const brightness = (c.r + c.g + c.b) / 3;
                 const saturation = Math.max(c.r, c.g, c.b) - Math.min(c.r, c.g, c.b);
-                
-                // Daha agresif filtreleme - SADECE CANLI RENKLER
                 return brightness > 50 && brightness < 220 && saturation > 40;
             });
 
             const workingColors = vibrantColors.length > 0 ? vibrantColors : colors;
 
-            // Doygunluğa göre sırala - EN CANLILAR ÖNCELİKLİ
             const sortedByVibrance = [...workingColors].sort((a, b) => {
                 const satA = Math.max(a.r, a.g, a.b) - Math.min(a.r, a.g, a.b);
                 const satB = Math.max(b.r, b.g, b.b) - Math.min(b.r, b.g, b.b);
                 return satB - satA;
             });
 
-            // İlk 15 en canlı rengi al
             return sortedByVibrance.slice(0, 15);
         }
 
         // 🌀 YAVAŞ VE YUMUŞAK HAREKET PATERNLERİ - POURING GİBİ
         const MOVEMENT_PATTERNS = [
-            // Yumuşak spiral hareketler
             {
                 name: 'gentle_spiral_right',
                 type: 'expanding_spiral',
@@ -179,7 +173,6 @@
                 endRadius: 100,
                 steps: 250
             },
-            // Yavaş daireler
             {
                 name: 'slow_large_circle',
                 type: 'circle',
@@ -194,7 +187,6 @@
                 radius: 80,
                 steps: 260
             },
-            // Yumuşak dalgalar
             {
                 name: 'smooth_wave',
                 type: 'sine_wave',
@@ -204,7 +196,6 @@
                 speed: 1.2,
                 steps: 270
             },
-            // Yumuşak organik akış
             {
                 name: 'organic_pour',
                 type: 'organic',
@@ -212,7 +203,6 @@
                 speed: 1.2,
                 steps: 260
             },
-            // Yavaş lissajous
             {
                 name: 'lissajous_smooth',
                 type: 'lissajous',
@@ -223,7 +213,7 @@
             }
         ];
 
-        // 🎹 PİYANO MESAJ SİSTEMİ - ÇOK RENKLİ FLUIDS!
+        // 🎹 PİYANO MESAJ SİSTEMİ
         window.addEventListener('message', (event) => {
             if (event.data.type === 'pianoKeyPress') {
                 const colors = event.data.colors || [];
@@ -231,35 +221,21 @@
                 
                 if (colors.length === 0) return;
                 
-                // En canlı renkleri al
                 const bestColors = selectBestColors(colors);
-                
                 if (bestColors.length === 0) return;
                 
-                // 🌈 3-5 FARKLI FLUİD OLUŞTUR!
-                const numFluids = Math.floor(Math.random() * 3) + 3; // 3-5 arası
+                const numFluids = Math.floor(Math.random() * 3) + 3;
                 
                 console.log(`🎹 ${key.toUpperCase()} → ${numFluids} multi-color fluid!`);
                 
                 for (let i = 0; i < numFluids; i++) {
-                    // Her fluid için FARKLI hareket paterni
                     const pattern = MOVEMENT_PATTERNS[Math.floor(Math.random() * MOVEMENT_PATTERNS.length)];
                     
-                    // Spawn noktasını pattern'e göre belirle
-                    let startX, startY;
-                    if (pattern.type === 'corner_smooth') {
-                        const coords = getCornerCoords(pattern.fromCorner);
-                        startX = coords.x;
-                        startY = coords.y;
-                    } else {
-                        // Random spawn
-                        startX = Math.random() * (parentWidth || window.innerWidth);
-                        startY = Math.random() * (parentHeight || window.innerHeight);
-                    }
+                    const startX = Math.random() * (parentWidth || window.innerWidth);
+                    const startY = Math.random() * (parentHeight || window.innerHeight);
                     
                     console.log(`  🎨 Fluid ${i+1}: ${bestColors.length} colors - ${pattern.name}`);
                     
-                    // Kısa gecikme ile fluid oluştur
                     setTimeout(() => {
                         createProfessionalFluid(startX, startY, bestColors, pattern);
                     }, i * 60);
@@ -267,21 +243,6 @@
             }
         });
 
-        // Köşe koordinatlarını al
-        function getCornerCoords(corner) {
-            const width = parentWidth || window.innerWidth;
-            const height = parentHeight || window.innerHeight;
-            
-            const corners = {
-                'top-left': { x: 0, y: 0 },
-                'top-right': { x: width, y: 0 },
-                'bottom-left': { x: 0, y: height },
-                'bottom-right': { x: width, y: height }
-            };
-            return corners[corner] || { x: width / 2, y: height / 2 };
-        }
-
-        // PNG rengini Cables SplatColor'a set et
         function setPianoColor(color) {
             if (typeof CABLES === 'undefined' || !CABLES.patch) return;
             
@@ -297,7 +258,7 @@
             }
         }
 
-        // 🌈 PROFESYONEL TOUCH DESIGNER TARZI FLUID - SÜREKLI RENK DEĞİŞİMİ!
+        // 🌈 PROFESYONEL FLUID - HER ADIMDA RENK DEĞİŞİR!
         function createProfessionalFluid(startX, startY, colors, pattern) {
             const canvas = document.getElementById('glcanvas');
             if (!canvas) return;
@@ -309,37 +270,33 @@
             let colorIndex = 0;
             const maxSteps = pattern.steps;
             
-            // Perlin noise için değişkenler
             let noiseOffsetX = Math.random() * 1000;
             let noiseOffsetY = Math.random() * 1000;
-            
-            // Smooth organic flow için
             let prevVelX = 0;
             let prevVelY = 0;
             
-            // BAŞLANGIÇ POZİSYONU - İLK FRAME'DEN HAREKET BAŞLASIN
             let currentX = startX;
             let currentY = startY;
             
-            // İLK RENK SET ET
             setPianoColor(colors[0]);
             
-            // ÖNCE 5-10 ADIM HAREKET BAŞLAT, SONRA MOUSEDOWN
+            // ÖNCE HAREKET BAŞLAT, SONRA MOUSEDOWN
             let preStartSteps = 0;
             const maxPreSteps = 8;
             
             const preInterval = setInterval(() => {
                 preStartSteps++;
                 
-                // Her adımda yavaşça ilerle
                 const preMove = calculatePosition(startX, startY, preStartSteps, pattern, width, height, noiseOffsetX, noiseOffsetY, prevVelX, prevVelY);
                 currentX = preMove.x;
                 currentY = preMove.y;
+                prevVelX = preMove.velX || 0;
+                prevVelY = preMove.velY || 0;
                 
                 if (preStartSteps >= maxPreSteps) {
                     clearInterval(preInterval);
                     
-                    // ŞİMDİ MOUSEDOWN YAP - artık hareket başlamış durumda
+                    // ŞİMDİ MOUSEDOWN YAP
                     canvas.dispatchEvent(new MouseEvent('mousedown', {
                         clientX: currentX,
                         clientY: currentY,
@@ -348,9 +305,8 @@
                         bubbles: true
                     }));
                     
-                    // Hemen bir hareket daha
                     setTimeout(() => {
-                        const nextMove = calculatePosition(startX, startY, maxPreSteps + 1, pattern, width, height, noiseOffsetX, noiseOffsetY);
+                        const nextMove = calculatePosition(startX, startY, maxPreSteps + 1, pattern, width, height, noiseOffsetX, noiseOffsetY, prevVelX, prevVelY);
                         canvas.dispatchEvent(new MouseEvent('mousemove', {
                             clientX: nextMove.x,
                             clientY: nextMove.y,
@@ -359,26 +315,19 @@
                             bubbles: true
                         }));
                         
-                        // Ana loop'u başlat
                         startMainLoop();
                     }, 1);
                 }
             }, 30);
             
             function startMainLoop() {
-            
-            function startMainLoop() {
-                // Ana animasyon döngüsü
                 const interval = setInterval(() => {
                     step++;
                     
-                    // 🎨 HER 4-5 ADIMDA RENK DEĞİŞTİR (daha yavaş renk geçişi)
-                    if (step % 5 === 0) {
-                        colorIndex = (colorIndex + 1) % colors.length;
-                        setPianoColor(colors[colorIndex]);
-                    }
+                    // 🎨 HER ADIMDA RENK DEĞİŞTİR!
+                    colorIndex = (colorIndex + 1) % colors.length;
+                    setPianoColor(colors[colorIndex]);
                     
-                    // Yeni pozisyon hesapla
                     const newPos = calculatePosition(startX, startY, step + maxPreSteps, pattern, width, height, noiseOffsetX, noiseOffsetY, prevVelX, prevVelY);
                     
                     currentX = newPos.x;
@@ -386,7 +335,6 @@
                     prevVelX = newPos.velX || 0;
                     prevVelY = newPos.velY || 0;
                     
-                    // Mouse hareket olayı gönder
                     canvas.dispatchEvent(new MouseEvent('mousemove', {
                         clientX: currentX,
                         clientY: currentY,
@@ -406,11 +354,10 @@
                             bubbles: true
                         }));
                     }
-                }, 35); // ÇOK DAHA YAVAŞ - pouring gibi
+                }, 35);
             }
         }
 
-        // Pozisyon hesaplama - Tüm pattern tipleri
         function calculatePosition(startX, startY, step, pattern, width, height, noiseX, noiseY, prevVelX, prevVelY) {
             let x, y;
             const progress = step / pattern.steps;
@@ -429,13 +376,6 @@
                     y = startY + Math.sin(angleExpand) * radiusExpand;
                     break;
                     
-                case 'contracting_spiral':
-                    const angleContract = (step / pattern.steps) * Math.PI * 6 * pattern.direction;
-                    const radiusContract = pattern.startRadius - (pattern.startRadius - pattern.endRadius) * progress;
-                    x = startX + Math.cos(angleContract) * radiusContract;
-                    y = startY + Math.sin(angleContract) * radiusContract;
-                    break;
-                    
                 case 'sine_wave':
                     if (pattern.direction === 'horizontal') {
                         x = startX + step * pattern.speed;
@@ -452,62 +392,7 @@
                     y = startY + Math.sin(pattern.yFreq * t) * pattern.radius;
                     break;
                     
-                case 'figure_eight':
-                    const t8 = progress * Math.PI * 2;
-                    x = startX + Math.sin(t8) * pattern.radius;
-                    y = startY + Math.sin(t8 * 2) * pattern.radius * 0.5;
-                    break;
-                    
-                case 'perlin':
-                    // Basit Perlin-like noise simulation
-                    const nx = Math.sin(step * pattern.scale + noiseX) * pattern.amplitude;
-                    const ny = Math.cos(step * pattern.scale + noiseY) * pattern.amplitude;
-                    x = startX + step * pattern.speed + nx;
-                    y = startY + ny;
-                    break;
-                    
-                case 'vortex':
-                    const angleVortex = (progress * Math.PI * 2 * pattern.rotations);
-                    const radiusVortex = pattern.radius * (1 - progress * 0.5);
-                    x = startX + Math.cos(angleVortex) * radiusVortex;
-                    y = startY + Math.sin(angleVortex) * radiusVortex;
-                    break;
-                    
-                case 'zigzag':
-                    const segment = Math.floor(progress * pattern.segments);
-                    const inSegment = (progress * pattern.segments) - segment;
-                    x = startX + step * pattern.speed;
-                    y = startY + (segment % 2 === 0 ? 1 : -1) * pattern.amplitude * inSegment;
-                    break;
-                    
-                case 'star':
-                    const angleStar = (progress * Math.PI * 2 * pattern.points * 2);
-                    const isOuter = Math.floor(progress * pattern.points * 2) % 2 === 0;
-                    const radiusStar = isOuter ? pattern.outerRadius : pattern.innerRadius;
-                    x = startX + Math.cos(angleStar) * radiusStar;
-                    y = startY + Math.sin(angleStar) * radiusStar;
-                    break;
-                    
-                case 'double_helix':
-                    const tHelix = progress * Math.PI * 4;
-                    const xOffset = Math.cos(tHelix) * pattern.radius;
-                    x = startX + xOffset;
-                    y = startY + progress * pattern.height;
-                    break;
-                    
-                case 'corner_smooth':
-                    const targetCorner = getCornerCoords(pattern.toCorner);
-                    const easedProgress = easeInOutCubic(progress);
-                    const dx = targetCorner.x - startX;
-                    const dy = targetCorner.y - startY;
-                    // Bezier curve benzeri smooth geçiş
-                    const curveOffset = Math.sin(progress * Math.PI) * pattern.curvature * Math.max(Math.abs(dx), Math.abs(dy));
-                    x = startX + dx * easedProgress + curveOffset;
-                    y = startY + dy * easedProgress;
-                    break;
-                    
                 case 'organic':
-                    // Smooth organic flow with momentum
                     const targetVelX = (Math.random() - 0.5) * pattern.speed * 3;
                     const targetVelY = (Math.random() - 0.5) * pattern.speed * 3;
                     const velX = prevVelX * pattern.smoothness + targetVelX * (1 - pattern.smoothness);
@@ -522,11 +407,6 @@
             }
             
             return { x, y };
-        }
-
-        // Smooth easing function
-        function easeInOutCubic(t) {
-            return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
         }
 
         window.addEventListener('DOMContentLoaded', () => {
