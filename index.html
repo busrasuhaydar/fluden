@@ -119,42 +119,87 @@
             }, 100);
         }
 
+        // 🎨 EN DOMINANT VE CANLI RENKLERİ SEÇ
         function selectBestColors(colors) {
             if (!colors || colors.length === 0) {
                 return [
-                    {r: 255, g: 100, b: 200},
-                    {r: 100, g: 200, b: 255},
-                    {r: 255, g: 200, b: 100}
+                    {r: 255, g: 80, b: 180},
+                    {r: 80, g: 180, b: 255},
+                    {r: 255, g: 180, b: 80}
                 ];
             }
 
-            const vibrantColors = colors.filter(c => {
+            // Renkleri grupla ve en yaygın olanları bul
+            const colorMap = new Map();
+            
+            colors.forEach(c => {
+                // Quantize colors to reduce similar colors
+                const qr = Math.round(c.r / 30) * 30;
+                const qg = Math.round(c.g / 30) * 30;
+                const qb = Math.round(c.b / 30) * 30;
+                const key = `${qr},${qg},${qb}`;
+                
                 const brightness = (c.r + c.g + c.b) / 3;
                 const saturation = Math.max(c.r, c.g, c.b) - Math.min(c.r, c.g, c.b);
-                return brightness > 50 && brightness < 220 && saturation > 40;
+                
+                // Sadece canlı, orta parlaklıkta renkler
+                if (brightness > 60 && brightness < 200 && saturation > 50) {
+                    if (!colorMap.has(key)) {
+                        colorMap.set(key, { color: c, count: 0, saturation });
+                    }
+                    colorMap.get(key).count++;
+                }
             });
 
-            const workingColors = vibrantColors.length > 0 ? vibrantColors : colors;
+            // En yaygın ve en doygun renkleri al
+            const sortedColors = Array.from(colorMap.values())
+                .sort((a, b) => {
+                    // Önce count'a göre, sonra saturation'a göre
+                    const countDiff = b.count - a.count;
+                    if (Math.abs(countDiff) > 5) return countDiff;
+                    return b.saturation - a.saturation;
+                })
+                .slice(0, 5) // En fazla 5 ana renk
+                .map(item => {
+                    // Renkleri biraz boost et (vibrant tut)
+                    const c = item.color;
+                    const max = Math.max(c.r, c.g, c.b);
+                    const boost = 1.15; // %15 daha vibrant
+                    
+                    return {
+                        r: Math.min(255, Math.round(c.r * boost)),
+                        g: Math.min(255, Math.round(c.g * boost)),
+                        b: Math.min(255, Math.round(c.b * boost))
+                    };
+                });
 
-            const sortedByVibrance = [...workingColors].sort((a, b) => {
-                const satA = Math.max(a.r, a.g, a.b) - Math.min(a.r, a.g, a.b);
-                const satB = Math.max(b.r, b.g, b.b) - Math.min(b.r, b.g, b.b);
-                return satB - satA;
-            });
+            if (sortedColors.length === 0) {
+                // Fallback - en doygun renkleri al
+                return colors
+                    .filter(c => {
+                        const sat = Math.max(c.r, c.g, c.b) - Math.min(c.r, c.g, c.b);
+                        return sat > 40;
+                    })
+                    .sort((a, b) => {
+                        const satA = Math.max(a.r, a.g, a.b) - Math.min(a.r, a.g, a.b);
+                        const satB = Math.max(b.r, b.g, b.b) - Math.min(b.r, b.g, b.b);
+                        return satB - satA;
+                    })
+                    .slice(0, 5);
+            }
 
-            return sortedByVibrance.slice(0, 8);
+            return sortedColors;
         }
 
-        // 🌊 BASİT AMA ETKİLİ HAREKET PATTERNLERİ
+        // 🌊 HAREKET PATTERNLERİ
         const FLOW_PATTERNS = [
-            { type: 'circle', radius: 180, clockwise: true },
-            { type: 'circle', radius: 180, clockwise: false },
-            { type: 'circle', radius: 140, clockwise: true },
-            { type: 'circle', radius: 140, clockwise: false },
-            { type: 'spiral', startRadius: 40, endRadius: 160, clockwise: true },
-            { type: 'spiral', startRadius: 160, endRadius: 40, clockwise: false },
-            { type: 's_curve', amplitude: 100, length: 350 },
-            { type: 'wave', amplitude: 90, wavelength: 250, length: 400 }
+            { type: 'circle', radius: 160, clockwise: true },
+            { type: 'circle', radius: 160, clockwise: false },
+            { type: 'circle', radius: 130, clockwise: true },
+            { type: 'spiral', startRadius: 50, endRadius: 150, clockwise: true },
+            { type: 'spiral', startRadius: 150, endRadius: 50, clockwise: false },
+            { type: 's_curve', amplitude: 90, length: 320 },
+            { type: 'wave', amplitude: 80, wavelength: 220, length: 360 }
         ];
 
         // 🎹 PİYANO MESAJ SİSTEMİ
@@ -168,21 +213,15 @@
                 const bestColors = selectBestColors(colors);
                 if (bestColors.length === 0) return;
                 
-                // 1-2 fluid
-                const numFluids = Math.random() > 0.6 ? 2 : 1;
+                console.log(`🎹 ${key.toUpperCase()} → ${bestColors.length} dominant colors`);
                 
-                console.log(`🎹 ${key.toUpperCase()} → ${numFluids} fluid (${bestColors.length} colors)`);
+                // 1 fluid (temiz ve net)
+                const pattern = FLOW_PATTERNS[Math.floor(Math.random() * FLOW_PATTERNS.length)];
                 
-                for (let i = 0; i < numFluids; i++) {
-                    const pattern = FLOW_PATTERNS[Math.floor(Math.random() * FLOW_PATTERNS.length)];
-                    
-                    const startX = Math.random() * 0.3 * parentWidth + 0.35 * parentWidth;
-                    const startY = Math.random() * 0.3 * parentHeight + 0.35 * parentHeight;
-                    
-                    setTimeout(() => {
-                        createFluidFlow(startX, startY, bestColors, pattern);
-                    }, i * 180);
-                }
+                const startX = Math.random() * 0.3 * parentWidth + 0.35 * parentWidth;
+                const startY = Math.random() * 0.3 * parentHeight + 0.35 * parentHeight;
+                
+                createFluidFlow(startX, startY, bestColors, pattern);
             }
         });
 
@@ -199,7 +238,7 @@
             } catch(e) {}
         }
 
-        // 🎨 İKİ RENGİ BLEND ET
+        // 🎨 RENK BLENDING
         function blendColors(color1, color2, ratio) {
             return {
                 r: Math.round(color1.r * (1 - ratio) + color2.r * ratio),
@@ -208,7 +247,7 @@
             };
         }
 
-        // 🌊 FLUID AKIŞI - 3-4 SANİYE, SMOOTH BAŞLANGIÇ, RENK KARIŞIMI
+        // 🌊 FLUID AKIŞI - FIXED DURATION: 3.5 SANİYE
         function createFluidFlow(startX, startY, colors, pattern) {
             const canvas = document.getElementById('glcanvas');
             if (!canvas) return;
@@ -216,21 +255,27 @@
             const width = parentWidth || window.innerWidth;
             const height = parentHeight || window.innerHeight;
             
-            // Path'i önceden hesapla - 180 nokta = 3 saniye (180 * 16ms)
-            const pathPoints = generateSmoothPath(startX, startY, pattern, width, height, 180);
+            // SABİT SÜRE: 200 frame × 18ms = 3.6 saniye
+            const TOTAL_FRAMES = 200;
+            const FRAME_DURATION = 18; // ms
             
-            let pointIndex = 0;
-            const totalPoints = pathPoints.length;
+            let frameIndex = 0;
+            
+            // Path hesapla
+            const basePath = generateBasePath(startX, startY, pattern, width, height, TOTAL_FRAMES);
             
             // İlk rengi set et
             setPianoColor(colors[0]);
             
-            // İLK NOKTA - BAŞLANGIÇ POZİSYONU (patlamayı önlemek için)
-            // Path'in biraz ilerisinden başla
-            let currentX = pathPoints[Math.min(5, pathPoints.length - 1)].x;
-            let currentY = pathPoints[Math.min(5, pathPoints.length - 1)].y;
+            // BAŞLANGIÇ POZİSYONU - patlamayı önlemek için
+            // İlk 15 frame'i atla, oradan başla
+            const startFrame = Math.min(15, Math.floor(basePath.length * 0.1));
+            let currentX = basePath[startFrame].x;
+            let currentY = basePath[startFrame].y;
             
-            // MOUSEDOWN - Fluid injection
+            console.log(`🎨 Fluid başlıyor: ${TOTAL_FRAMES} frame, ${colors.length} renk`);
+            
+            // MOUSEDOWN - başlangıç
             canvas.dispatchEvent(new MouseEvent('mousedown', {
                 clientX: currentX,
                 clientY: currentY,
@@ -239,16 +284,17 @@
                 bubbles: true
             }));
             
-            // İlk hareketi biraz bekleyerek başlat
+            // İlk harekete başlamadan önce kısa bekle
             setTimeout(() => {
-                // MOUSEMOVE ANİMASYONU
-                const moveInterval = setInterval(() => {
-                    pointIndex++;
+                // ANA ANİMASYON LOOP
+                const animationInterval = setInterval(() => {
+                    frameIndex++;
                     
-                    if (pointIndex >= totalPoints) {
-                        clearInterval(moveInterval);
+                    // Bitmiş mi kontrol et
+                    if (frameIndex >= TOTAL_FRAMES - startFrame) {
+                        clearInterval(animationInterval);
                         
-                        // MOUSEUP - Sıvıyı serbest bırak
+                        // MOUSEUP - bitir
                         canvas.dispatchEvent(new MouseEvent('mouseup', {
                             clientX: currentX,
                             clientY: currentY,
@@ -257,12 +303,14 @@
                             bubbles: true
                         }));
                         
-                        console.log('🎨 Fluid tamamlandı');
+                        console.log('✅ Fluid tamamlandı');
                         return;
                     }
                     
-                    // RENK BLENDING - Tüm renkler smooth geçişlerle karışıyor
-                    const progress = pointIndex / totalPoints;
+                    const actualFrame = frameIndex + startFrame;
+                    
+                    // RENK BLENDING - smooth geçiş
+                    const progress = frameIndex / (TOTAL_FRAMES - startFrame);
                     const colorProgress = progress * (colors.length - 1);
                     const colorIndex = Math.floor(colorProgress);
                     const colorBlend = colorProgress - colorIndex;
@@ -278,28 +326,31 @@
                         setPianoColor(colors[colors.length - 1]);
                     }
                     
-                    currentX = pathPoints[pointIndex].x;
-                    currentY = pathPoints[pointIndex].y;
+                    // YENİ POZİSYON
+                    if (actualFrame < basePath.length) {
+                        currentX = basePath[actualFrame].x;
+                        currentY = basePath[actualFrame].y;
+                        
+                        // Sınır kontrolü
+                        currentX = Math.max(20, Math.min(width - 20, currentX));
+                        currentY = Math.max(20, Math.min(height - 20, currentY));
+                        
+                        // MOUSEMOVE
+                        canvas.dispatchEvent(new MouseEvent('mousemove', {
+                            clientX: currentX,
+                            clientY: currentY,
+                            button: 0,
+                            buttons: 1,
+                            bubbles: true
+                        }));
+                    }
                     
-                    // Sınır kontrolü
-                    currentX = Math.max(10, Math.min(width - 10, currentX));
-                    currentY = Math.max(10, Math.min(height - 10, currentY));
-                    
-                    // MOUSEMOVE - Kuvvet vektörü + boya enjeksiyonu
-                    canvas.dispatchEvent(new MouseEvent('mousemove', {
-                        clientX: currentX,
-                        clientY: currentY,
-                        button: 0,
-                        buttons: 1,
-                        bubbles: true
-                    }));
-                    
-                }, 16); // 60fps
-            }, 50); // Smooth başlangıç için 50ms gecikme
+                }, FRAME_DURATION);
+            }, 60); // Smooth başlangıç için 60ms bekle
         }
 
-        // 🎨 SMOOTH PATH GENERATOR
-        function generateSmoothPath(startX, startY, pattern, width, height, pointCount) {
+        // 🎨 BASE PATH GENERATOR - SPLİNE OLMADAN (süre kontrolü için)
+        function generateBasePath(startX, startY, pattern, width, height, pointCount) {
             const points = [];
             
             // Perlin-like noise
@@ -310,23 +361,23 @@
                 const t = i / pointCount;
                 let x, y;
                 
-                // Organic noise - daha hafif
-                const noiseScale = 0.02;
+                // Organic noise - hafif
+                const noiseScale = 0.025;
                 const noiseX = (Math.sin(i * noiseScale + noiseOffsetX) + 
-                               Math.sin(i * noiseScale * 2.1 + noiseOffsetX * 1.3)) * 12;
+                               Math.sin(i * noiseScale * 2.3 + noiseOffsetX * 1.4)) * 10;
                 const noiseY = (Math.cos(i * noiseScale + noiseOffsetY) + 
-                               Math.cos(i * noiseScale * 1.7 + noiseOffsetY * 1.8)) * 12;
+                               Math.cos(i * noiseScale * 1.9 + noiseOffsetY * 1.7)) * 10;
                 
                 switch(pattern.type) {
                     case 'circle':
                         const angleCircle = t * Math.PI * 2 * (pattern.clockwise ? 1 : -1);
-                        const breathe = 1 + Math.sin(t * Math.PI * 3) * 0.12;
+                        const breathe = 1 + Math.sin(t * Math.PI * 2.5) * 0.1;
                         x = startX + Math.cos(angleCircle) * pattern.radius * breathe + noiseX;
                         y = startY + Math.sin(angleCircle) * pattern.radius * breathe + noiseY;
                         break;
                         
                     case 'spiral':
-                        const angleSpiral = t * Math.PI * 5 * (pattern.clockwise ? 1 : -1);
+                        const angleSpiral = t * Math.PI * 4 * (pattern.clockwise ? 1 : -1);
                         const radiusSpiral = pattern.startRadius + 
                                             (pattern.endRadius - pattern.startRadius) * t;
                         x = startX + Math.cos(angleSpiral) * radiusSpiral + noiseX;
@@ -346,50 +397,14 @@
                         break;
                         
                     default:
-                        x = startX;
-                        y = startY;
+                        x = startX + t * 100;
+                        y = startY + t * 100;
                 }
                 
                 points.push({ x, y });
             }
             
-            // Catmull-Rom spline
-            return smoothPathWithSpline(points);
-        }
-
-        // 🌀 CATMULL-ROM SPLINE
-        function smoothPathWithSpline(points) {
-            if (points.length < 4) return points;
-            
-            const smoothPoints = [];
-            const tension = 0.5;
-            
-            for (let i = 0; i < points.length - 3; i++) {
-                const p0 = points[i];
-                const p1 = points[i + 1];
-                const p2 = points[i + 2];
-                const p3 = points[i + 3];
-                
-                // Her segment için 6 interpolation (daha az yoğun)
-                const steps = 6;
-                for (let t = 0; t < steps; t++) {
-                    const tNorm = t / steps;
-                    const tt = tNorm * tNorm;
-                    const ttt = tt * tNorm;
-                    
-                    const q0 = -tension * ttt + 2 * tension * tt - tension * tNorm;
-                    const q1 = (2 - tension) * ttt + (tension - 3) * tt + 1;
-                    const q2 = (tension - 2) * ttt + (3 - 2 * tension) * tt + tension * tNorm;
-                    const q3 = tension * ttt - tension * tt;
-                    
-                    const x = p0.x * q0 + p1.x * q1 + p2.x * q2 + p3.x * q3;
-                    const y = p0.y * q0 + p1.y * q1 + p2.y * q2 + p3.y * q3;
-                    
-                    smoothPoints.push({ x, y });
-                }
-            }
-            
-            return smoothPoints;
+            return points;
         }
 
         window.addEventListener('DOMContentLoaded', () => {
