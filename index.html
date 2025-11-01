@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Piano Fluid - Living Art</title>
+    <style>
+        * {
+            margin: 0 !important;
+            padding: 0 !important;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            box-sizing: border-box !important;
+        }
+
+        html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: transparent !important;
+            color: #fff;
+            font-family: Helvetica, Arial, sans-serif;
+            position: relative;
+        }
+
+        #glcanvas {
+            display: block !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            outline: 0 !important;
+            transform: none !important;
+            background: transparent !important;
+        }
+
+        div[style*="position: absolute"],
+        div[style*="fixed"],
+        .cables-stats,
+        .stats-panel {
+            display: none !important;
+            visibility: hidden !important;
+        }
+    </style>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
+</head>
+<body>
+    <canvas id="glcanvas" tabindex="1"></canvas>
+    <script type="text/javascript" src="js/patch.js" async></script>
+    <script type="text/javascript">
+
+        function showError(initiator,...args) {}
+
+        let parentWidth = window.innerWidth;
+        let parentHeight = window.innerHeight;
+
+        if (window.parent !== window) {
+            try {
+                parentWidth = window.parent.innerWidth;
+                parentHeight = window.parent.innerHeight;
+            } catch(e) {}
+        }
+
+        function forceFullScreenCanvas() {
+            const canvas = document.getElementById('glcanvas');
+            if (!canvas) return;
+            
+            const width = parentWidth || window.innerWidth || document.documentElement.clientWidth;
+            const height = parentHeight || window.innerHeight || document.documentElement.clientHeight;
+            
+            canvas.width = width;
+            canvas.height = height;
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+            canvas.style.position = 'absolute';
+            canvas.style.top = '0';
+            canvas.style.left = '0';
+        }
+
+        function patchInitialized(patch) {
+            console.log('✅ Fluid hazır!');
+            hideStatsPanels();
+            forceFullScreenCanvas();
+            
+            setTimeout(forceFullScreenCanvas, 100);
+            setTimeout(forceFullScreenCanvas, 500);
+            setTimeout(forceFullScreenCanvas, 1000);
+            setTimeout(forceFullScreenCanvas, 2000);
+        }
+
+        function patchFinishedLoading(patch) {
+            console.log('🎨 Yükleme tamamlandı!');
+            hideStatsPanels();
+            forceFullScreenCanvas();
+        }
+
+        function hideStatsPanels() {
+            setTimeout(() => {
+                const statsDivs = document.querySelectorAll('div');
+                statsDivs.forEach(div => {
+                    const style = div.getAttribute('style');
+                    if (style && (style.includes('position: absolute') || style.includes('position: fixed'))) {
+                        div.style.display = 'none';
+                        div.style.visibility = 'hidden';
+                    }
+                });
+            }, 100);
+        }
+
+        function selectBestColors(colors) {
+            if (!colors || colors.length === 0) {
+                return [
+                    {r: 255, g: 100, b: 200},
+                    {r: 100, g: 200, b: 255},
+                    {r: 255, g: 200, b: 100}
+                ];
+            }
+
+            const vibrantColors = colors.filter(c => {
+                const brightness = (c.r + c.g + c.b) / 3;
+                const saturation = Math.max(c.r, c.g, c.b) - Math.min(c.r, c.g, c.b);
+                return brightness > 50 && brightness < 220 && saturation > 40;
+            });
+
+            const workingColors = vibrantColors.length > 0 ? vibrantColors : colors;
+
+            const sortedByVibrance = [...workingColors].sort((a, b) => {
+                const satA = Math.max(a.r, a.g, a.b) - Math.min(a.r, a.g, a.b);
+                const satB = Math.max(b.r, b.g, b.b) - Math.min(b.r, b.g, b.b);
+                return satB - satA;
+            });
+
+            return sortedByVibrance.slice(0, 15);
+        }
+
+        // 🌊 TOUCH DESIGNER TARZI ORGANİK HAREKET PATTERNLERİ
+        const ORGANIC_PATTERNS = [
+            // Smooth flowing circles - farklı boyutlarda
+            { type: 'flow_circle', radius: 180, speed: 1.2, turbulence: 0.15 },
+            { type: 'flow_circle', radius: 140, speed: 1.4, turbulence: 0.2 },
+            { type: 'flow_circle', radius: 100, speed: 1.6, turbulence: 0.25 },
+            
+            // Organic spirals - doğal genişleme
+            { type: 'organic_spiral', startRadius: 20, endRadius: 160, rotations: 3, turbulence: 0.3 },
+            { type: 'organic_spiral', startRadius: 30, endRadius: 120, rotations: 2.5, turbulence: 0.25 },
+            
+            // Lissajous curves - smooth harmonics
+            { type: 'lissajous', xFreq: 3, yFreq: 2, radius: 120, phase: 0, turbulence: 0.2 },
+            { type: 'lissajous', xFreq: 5, yFreq: 3, radius: 100, phase: Math.PI/4, turbulence: 0.15 },
+            { type: 'lissajous', xFreq: 4, yFreq: 3, radius: 140, phase: Math.PI/2, turbulence: 0.25 },
+            
+            // Wave flows - dalgalı akışlar
+            { type: 'wave_flow', amplitude: 80, frequency: 0.08, direction: 'diagonal', turbulence: 0.2 },
+            { type: 'wave_flow', amplitude: 60, frequency: 0.12, direction: 'horizontal', turbulence: 0.15 },
+            { type: 'wave_flow', amplitude: 70, frequency: 0.1, direction: 'vertical', turbulence: 0.18 },
+            
+            // Vortex - dönen akışlar
+            { type: 'vortex', radius: 130, rotations: 3, inward: true, turbulence: 0.25 },
+            { type: 'vortex', radius: 150, rotations: 2, inward: false, turbulence: 0.2 },
+            
+            // Figure-8 variations
+            { type: 'figure_eight', scale: 110, orientation: 'horizontal', turbulence: 0.2 },
+            { type: 'figure_eight', scale: 90, orientation: 'vertical', turbulence: 0.15 },
+            
+            // Perlin-guided flow
+            { type: 'perlin_flow', scale: 0.015, amplitude: 100, speed: 1.5, turbulence: 0.3 },
+            { type: 'perlin_flow', scale: 0.02, amplitude: 80, speed: 1.8, turbulence: 0.25 },
+            
+            // Smooth corners - bezier curves
+            { type: 'corner_flow', from: 'random', to: 'random', curvature: 0.4, turbulence: 0.15 },
+            
+            // Rose curves - çiçek desenleri
+            { type: 'rose_curve', petals: 5, radius: 120, turbulence: 0.2 },
+            { type: 'rose_curve', petals: 7, radius: 100, turbulence: 0.18 },
+            
+            // Epitrochoid - smooth wheel curves
+            { type: 'epitrochoid', R: 80, r: 30, d: 50, turbulence: 0.2 },
+            { type: 'epitrochoid', R: 70, r: 40, d: 60, turbulence: 0.22 }
+        ];
+
+        // 🎹 PİYANO MESAJ SİSTEMİ
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'pianoKeyPress') {
+                const colors = event.data.colors || [];
+                const key = event.data.key;
+                
+                if (colors.length === 0) return;
+                
+                const bestColors = selectBestColors(colors);
+                if (bestColors.length === 0) return;
+                
+                // 2-4 fluid oluştur
+                const numFluids = Math.floor(Math.random() * 3) + 2;
+                
+                console.log(`🎹 ${key.toUpperCase()} → ${numFluids} organic fluids`);
+                
+                for (let i = 0; i < numFluids; i++) {
+                    const pattern = ORGANIC_PATTERNS[Math.floor(Math.random() * ORGANIC_PATTERNS.length)];
+                    
+                    // Random spawn point
+                    const startX = Math.random() * 0.4 * parentWidth + 0.3 * parentWidth;
+                    const startY = Math.random() * 0.4 * parentHeight + 0.3 * parentHeight;
+                    
+                    setTimeout(() => {
+                        createOrganicFluid(startX, startY, bestColors, pattern);
+                    }, i * 120);
+                }
+            }
+        });
+
+        function setPianoColor(color) {
+            if (typeof CABLES === 'undefined' || !CABLES.patch) return;
+            
+            try {
+                const normalizedColor = [
+                    color.r / 255,
+                    color.g / 255,
+                    color.b / 255
+                ];
+                CABLES.patch.setVariable('SplatColor', normalizedColor);
+            } catch(e) {}
+        }
+
+        // 🌈 ORGANİK FLUID OLUŞTURMA - TOUCH DESIGNER TARZI
+        function createOrganicFluid(startX, startY, colors, pattern) {
+            const canvas = document.getElementById('glcanvas');
+            if (!canvas) return;
+            
+            const width = parentWidth || window.innerWidth;
+            const height = parentHeight || window.innerHeight;
+            
+            let step = 0;
+            const totalSteps = 280; // Daha uzun süre
+            
+            // Perlin noise offset
+            const noiseOffsetX = Math.random() * 1000;
+            const noiseOffsetY = Math.random() * 1000;
+            const timeOffset = Math.random() * 1000;
+            
+            // Velocity smoothing
+            let velocityX = 0;
+            let velocityY = 0;
+            
+            // Color blending - her renk daha uzun süre kalacak
+            let currentColorIndex = 0;
+            let colorBlendProgress = 0;
+            const colorDuration = Math.floor(totalSteps / colors.length); // Her renk için eşit süre
+            
+            // İlk rengi ayarla
+            setPianoColor(colors[0]);
+            
+            // İLK POZİSYON - başlangıç noktasından biraz uzakta
+            const firstPos = calculateOrganicPosition(startX, startY, 0, pattern, width, height, 
+                noiseOffsetX, noiseOffsetY, timeOffset, velocityX, velocityY);
+            
+            let currentX = firstPos.x;
+            let currentY = firstPos.y;
+            velocityX = firstPos.vx;
+            velocityY = firstPos.vy;
+            
+            // MOUSEDOWN - sıvıya boya enjeksiyonu başlat
+            canvas.dispatchEvent(new MouseEvent('mousedown', {
+                clientX: currentX,
+                clientY: currentY,
+                button: 0,
+                buttons: 1,
+                bubbles: true
+            }));
+            
+            // İLK HAREKET - smooth başlangıç
+            setTimeout(() => {
+                const secondPos = calculateOrganicPosition(startX, startY, 1, pattern, width, height,
+                    noiseOffsetX, noiseOffsetY, timeOffset, velocityX, velocityY);
+                
+                currentX = secondPos.x;
+                currentY = secondPos.y;
+                velocityX = secondPos.vx;
+                velocityY = secondPos.vy;
+                
+                canvas.dispatchEvent(new MouseEvent('mousemove', {
+                    clientX: currentX,
+                    clientY: currentY,
+                    button: 0,
+                    buttons: 1,
+                    bubbles: true
+                }));
+            }, 25);
+            
+            // ANA ANİMASYON DÖNGÜSÜ
+            const interval = setInterval(() => {
+                step++;
+                
+                // RENK GEÇİŞİ - smooth blending
+                colorBlendProgress++;
+                if (colorBlendProgress >= colorDuration && currentColorIndex < colors.length - 1) {
+                    currentColorIndex++;
+                    colorBlendProgress = 0;
+                    
+                    // Yeni rengi smooth geçiş ile ayarla
+                    setPianoColor(colors[currentColorIndex]);
+                }
+                
+                // YENİ POZİSYON HESAPLA
+                const newPos = calculateOrganicPosition(startX, startY, step, pattern, width, height,
+                    noiseOffsetX, noiseOffsetY, timeOffset, velocityX, velocityY);
+                
+                currentX = newPos.x;
+                currentY = newPos.y;
+                velocityX = newPos.vx;
+                velocityY = newPos.vy;
+                
+                // Sınırları kontrol et
+                currentX = Math.max(0, Math.min(width, currentX));
+                currentY = Math.max(0, Math.min(height, currentY));
+                
+                // MOUSEMOVE - kuvvet vektörü ve boya enjeksiyonu
+                canvas.dispatchEvent(new MouseEvent('mousemove', {
+                    clientX: currentX,
+                    clientY: currentY,
+                    button: 0,
+                    buttons: 1,
+                    bubbles: true
+                }));
+                
+                if (step >= totalSteps) {
+                    clearInterval(interval);
+                    
+                    // MOUSEUP - sıvıyı serbest bırak
+                    canvas.dispatchEvent(new MouseEvent('mouseup', {
+                        clientX: currentX,
+                        clientY: currentY,
+                        button: 0,
+                        buttons: 0,
+                        bubbles: true
+                    }));
+                }
+            }, 22); // 22ms = ~45fps, smooth ama çok hızlı değil
+        }
+
+        // 🎨 ORGANİK POZİSYON HESAPLAMA
+        function calculateOrganicPosition(startX, startY, step, pattern, width, height, 
+            noiseX, noiseY, timeOffset, prevVelX, prevVelY) {
+            
+            const progress = step / 280;
+            const time = step * 0.05 + timeOffset;
+            
+            let baseX = startX;
+            let baseY = startY;
+            let targetVelX = 0;
+            let targetVelY = 0;
+            
+            // Pattern'e göre hedef pozisyon
+            switch(pattern.type) {
+                case 'flow_circle':
+                    const angleCircle = progress * Math.PI * 2 * pattern.speed;
+                    const radiusCircle = pattern.radius * (1 + Math.sin(time * 0.3) * 0.2);
+                    baseX = startX + Math.cos(angleCircle) * radiusCircle;
+                    baseY = startY + Math.sin(angleCircle) * radiusCircle;
+                    targetVelX = -Math.sin(angleCircle) * pattern.speed * 2;
+                    targetVelY = Math.cos(angleCircle) * pattern.speed * 2;
+                    break;
+                    
+                case 'organic_spiral':
+                    const angleSpiral = progress * Math.PI * 2 * pattern.rotations;
+                    const radiusSpiral = pattern.startRadius + (pattern.endRadius - pattern.startRadius) * progress;
+                    const spiralScale = 1 + Math.sin(time * 0.4) * 0.15;
+                    baseX = startX + Math.cos(angleSpiral) * radiusSpiral * spiralScale;
+                    baseY = startY + Math.sin(angleSpiral) * radiusSpiral * spiralScale;
+                    targetVelX = -Math.sin(angleSpiral) * 2;
+                    targetVelY = Math.cos(angleSpiral) * 2;
+                    break;
+                    
+                case 'lissajous':
+                    const t = progress * Math.PI * 2;
+                    baseX = startX + Math.sin(pattern.xFreq * t + pattern.phase) * pattern.radius;
+                    baseY = startY + Math.sin(pattern.yFreq * t) * pattern.radius;
+                    targetVelX = Math.cos(pattern.xFreq * t + pattern.phase) * pattern.xFreq;
+                    targetVelY = Math.cos(pattern.yFreq * t) * pattern.yFreq;
+                    break;
+                    
+                case 'wave_flow':
+                    const waveProgress = step * 2.5;
+                    if (pattern.direction === 'horizontal') {
+                        baseX = startX + waveProgress;
+                        baseY = startY + Math.sin(waveProgress * pattern.frequency) * pattern.amplitude;
+                    } else if (pattern.direction === 'vertical') {
+                        baseX = startX + Math.sin(waveProgress * pattern.frequency) * pattern.amplitude;
+                        baseY = startY + waveProgress;
+                    } else {
+                        baseX = startX + waveProgress * 0.7;
+                        baseY = startY + waveProgress * 0.7 + Math.sin(waveProgress * pattern.frequency) * pattern.amplitude;
+                    }
+                    targetVelX = Math.cos(waveProgress * pattern.frequency) * pattern.frequency * pattern.amplitude;
+                    targetVelY = pattern.direction === 'vertical' ? 2.5 : Math.sin(waveProgress * pattern.frequency) * pattern.frequency * 2;
+                    break;
+                    
+                case 'vortex':
+                    const angleVortex = progress * Math.PI * 2 * pattern.rotations;
+                    const radiusVortex = pattern.radius * (pattern.inward ? (1 - progress * 0.6) : (0.4 + progress * 0.6));
+                    baseX = startX + Math.cos(angleVortex) * radiusVortex;
+                    baseY = startY + Math.sin(angleVortex) * radiusVortex;
+                    targetVelX = -Math.sin(angleVortex) * pattern.rotations;
+                    targetVelY = Math.cos(angleVortex) * pattern.rotations;
+                    break;
+                    
+                case 'figure_eight':
+                    const t8 = progress * Math.PI * 2;
+                    if (pattern.orientation === 'horizontal') {
+                        baseX = startX + Math.sin(t8) * pattern.scale;
+                        baseY = startY + Math.sin(t8 * 2) * pattern.scale * 0.5;
+                    } else {
+                        baseX = startX + Math.sin(t8 * 2) * pattern.scale * 0.5;
+                        baseY = startY + Math.sin(t8) * pattern.scale;
+                    }
+                    break;
+                    
+                case 'perlin_flow':
+                    const nx = Math.sin(step * pattern.scale + noiseX) + Math.cos(step * pattern.scale * 1.7 + noiseX);
+                    const ny = Math.cos(step * pattern.scale + noiseY) + Math.sin(step * pattern.scale * 1.3 + noiseY);
+                    baseX = startX + step * pattern.speed + nx * pattern.amplitude;
+                    baseY = startY + ny * pattern.amplitude;
+                    targetVelX = nx * 0.5;
+                    targetVelY = ny * 0.5;
+                    break;
+                    
+                case 'rose_curve':
+                    const tRose = progress * Math.PI * 2;
+                    const k = pattern.petals;
+                    const radiusRose = pattern.radius * Math.cos(k * tRose);
+                    baseX = startX + radiusRose * Math.cos(tRose);
+                    baseY = startY + radiusRose * Math.sin(tRose);
+                    break;
+                    
+                case 'epitrochoid':
+                    const tEpi = progress * Math.PI * 2 * 3;
+                    const R = pattern.R;
+                    const r = pattern.r;
+                    const d = pattern.d;
+                    baseX = startX + (R + r) * Math.cos(tEpi) - d * Math.cos((R + r) / r * tEpi);
+                    baseY = startY + (R + r) * Math.sin(tEpi) - d * Math.sin((R + r) / r * tEpi);
+                    break;
+                    
+                default:
+                    baseX = startX;
+                    baseY = startY;
+            }
+            
+            // TURBULENCE - organic noise
+            const turbulence = pattern.turbulence || 0.2;
+            const noiseScale = 0.02;
+            const turbX = Math.sin(step * noiseScale + noiseX) * Math.cos(step * noiseScale * 1.3 + timeOffset);
+            const turbY = Math.cos(step * noiseScale + noiseY) * Math.sin(step * noiseScale * 1.7 + timeOffset);
+            
+            baseX += turbX * turbulence * 60;
+            baseY += turbY * turbulence * 60;
+            
+            // VELOCITY SMOOTHING - momentum
+            const smoothing = 0.75;
+            const vx = prevVelX * smoothing + targetVelX * (1 - smoothing);
+            const vy = prevVelY * smoothing + targetVelY * (1 - smoothing);
+            
+            return {
+                x: baseX,
+                y: baseY,
+                vx: vx,
+                vy: vy
+            };
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            forceFullScreenCanvas();
+        });
+
+        document.addEventListener("CABLES.jsLoaded", function (event) {
+            forceFullScreenCanvas();
+            
+            CABLES.patch = new CABLES.Patch({
+                patch: CABLES.exportedPatch,
+                "prefixAssetPath": "",
+                "assetPath": "assets/",
+                "jsPath": "js/",
+                "glCanvasId": "glcanvas",
+                "glCanvasResizeToWindow": true,
+                "onError": showError,
+                "onPatchLoaded": patchInitialized,
+                "onFinishedLoading": patchFinishedLoading,
+                "canvas": {"alpha":true, "premultipliedAlpha":true }
+            });
+            
+            hideStatsPanels();
+            setTimeout(forceFullScreenCanvas, 50);
+        });
+
+        document.getElementById('glcanvas').addEventListener('touchmove', (e)=>{ e.preventDefault(); }, false);
+        
+        setInterval(hideStatsPanels, 1000);
+        setInterval(forceFullScreenCanvas, 2000);
+        
+        window.addEventListener('resize', () => {
+            try {
+                if (window.parent !== window) {
+                    parentWidth = window.parent.innerWidth;
+                    parentHeight = window.parent.innerHeight;
+                }
+            } catch(e) {
+                parentWidth = window.innerWidth;
+                parentHeight = window.innerHeight;
+            }
+            forceFullScreenCanvas();
+        });
+
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'parentResize') {
+                parentWidth = event.data.width;
+                parentHeight = event.data.height;
+                forceFullScreenCanvas();
+            }
+        });
+    </script>
+</body>
+</html>
