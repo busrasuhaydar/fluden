@@ -1,204 +1,176 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Piano Fluid - Living Art</title>
+    <title>Piano Fluid - Pouring Art</title>
     <style>
-        * { margin:0 !important; padding:0 !important; -webkit-tap-highlight-color:transparent; user-select:none; box-sizing:border-box !important; }
-        html, body { width:100%; height:100%; overflow:hidden; background-color:transparent; color:#fff; font-family:Helvetica, Arial, sans-serif; position:relative; }
-        #glcanvas { display:block !important; position:absolute !important; top:0 !important; left:0 !important; width:100% !important; height:100% !important; outline:0 !important; transform:none !important; background:transparent !important; }
+        * { margin:0; padding:0; box-sizing:border-box; user-select:none; }
+        html, body { width:100%; height:100%; overflow:hidden; background:transparent; }
+        #glcanvas { position:absolute; top:0; left:0; width:100%; height:100%; outline:0; background:transparent; }
         div[style*="position: absolute"], div[style*="fixed"], .cables-stats, .stats-panel { display:none !important; visibility:hidden !important; }
     </style>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body>
-    <canvas id="glcanvas" tabindex="1"></canvas>
-    <script type="text/javascript" src="js/patch.js" async></script>
-    <script type="text/javascript">
+<canvas id="glcanvas" tabindex="1"></canvas>
 
-    function showError() { }
+<script type="text/javascript" src="js/patch.js" async></script>
+<script>
+let parentWidth = window.innerWidth;
+let parentHeight = window.innerHeight;
+if (window.parent !== window) {
+    try { parentWidth = window.parent.innerWidth; parentHeight = window.parent.innerHeight; } catch(e){}
+}
 
-    let parentWidth = window.innerWidth;
-    let parentHeight = window.innerHeight;
-    if(window.parent!==window){ try{ parentWidth=window.parent.innerWidth; parentHeight=window.parent.innerHeight; }catch(e){} }
+function forceFullScreenCanvas(){
+    const canvas = document.getElementById('glcanvas');
+    const width = parentWidth || window.innerWidth;
+    const height = parentHeight || window.innerHeight;
+    canvas.width = width; canvas.height = height;
+    canvas.style.width = width+'px'; canvas.style.height = height+'px';
+    canvas.style.position='absolute'; canvas.style.top='0'; canvas.style.left='0';
+}
 
-    function forceFullScreenCanvas(){
-        const canvas = document.getElementById('glcanvas');
-        if(!canvas) return;
-        const width = parentWidth || window.innerWidth;
-        const height = parentHeight || window.innerHeight;
-        canvas.width = width;
-        canvas.height = height;
-        canvas.style.width = width+'px';
-        canvas.style.height = height+'px';
-    }
+function patchInitialized(patch){ hideStatsPanels(); forceFullScreenCanvas(); }
+function patchFinishedLoading(patch){ hideStatsPanels(); forceFullScreenCanvas(); }
+function hideStatsPanels(){ setTimeout(()=>{document.querySelectorAll('div').forEach(d=>{const s=d.style;if(s&& (s.position=='absolute'||s.position=='fixed')){s.display='none';s.visibility='hidden';}});},100); }
 
-    function patchInitialized(patch){ forceFullScreenCanvas(); setTimeout(forceFullScreenCanvas, 100); setTimeout(forceFullScreenCanvas, 500); }
-    function patchFinishedLoading(patch){ forceFullScreenCanvas(); }
+function selectBestColors(colors){
+    if(!colors || colors.length==0) return [{r:255,g:100,b:200},{r:100,g:200,b:255},{r:255,g:200,b:100}];
+    const vibrant = colors.filter(c=>{const b=(c.r+c.g+c.b)/3,s=Math.max(c.r,c.g,c.b)-Math.min(c.r,c.g,c.b); return b>50&&b<220&&s>40;});
+    const working = vibrant.length>0?vibrant:colors;
+    return working.sort((a,b)=>Math.max(b.r,b.g,b.b)-Math.min(b.r,b.g,b.b)- (Math.max(a.r,a.g,a.b)-Math.min(a.r,a.g,a.b))).slice(0,15);
+}
 
-    function hideStatsPanels(){
-        setTimeout(()=>{
-            document.querySelectorAll('div').forEach(div=>{
-                const style = div.getAttribute('style');
-                if(style && (style.includes('position: absolute') || style.includes('position: fixed'))){ div.style.display='none'; div.style.visibility='hidden'; }
-            });
-        },100);
-    }
+// Yeni patternler ve otomatik sürükleme
+const MOVEMENT_PATTERNS = [
+    {name:'gentle_spiral_right',type:'expanding_spiral',direction:1,startRadius:5,endRadius:150,steps:250,speed:0.7},
+    {name:'gentle_spiral_left',type:'expanding_spiral',direction:-1,startRadius:5,endRadius:150,steps:250,speed:0.7},
+    {name:'slow_large_circle',type:'circle',direction:1,radius:180,steps:280,speed:0.7},
+    {name:'slow_medium_circle',type:'circle',direction:-1,radius:120,steps:260,speed:0.7},
+    {name:'smooth_wave',type:'sine_wave',direction:'horizontal',amplitude:80,frequency:0.06,speed:0.7,steps:270},
+    {name:'organic_pour',type:'organic',smoothness:0.85,speed:0.7,steps:260},
+    {name:'lissajous_smooth',type:'lissajous',xFreq:2,yFreq:3,radius:120,steps:300,speed:0.7}
+];
 
-    function selectBestColors(colors){
-        if(!colors || colors.length===0) return [{r:255,g:100,b:200},{r:100,g:200,b:255},{r:255,g:200,b:100}];
-        const vibrantColors = colors.filter(c=>{ const brightness=(c.r+c.g+c.b)/3; const saturation=Math.max(c.r,c.g,c.b)-Math.min(c.r,c.g,c.b); return brightness>50 && brightness<220 && saturation>40; });
-        const workingColors = vibrantColors.length>0?vibrantColors:colors;
-        const sortedByVibrance=[...workingColors].sort((a,b)=>{ const satA=Math.max(a.r,a.g,a.b)-Math.min(a.r,a.g,a.b); const satB=Math.max(b.r,b.g,b.b)-Math.min(b.r,b.g,b.b); return satB-satA; });
-        return sortedByVibrance.slice(0,15);
-    }
-
-    const MOVEMENT_PATTERNS = [
-        { name:'gentle_spiral_right', type:'expanding_spiral', direction:1, startRadius:5, endRadius:300, steps:200 },
-        { name:'gentle_spiral_left', type:'expanding_spiral', direction:-1, startRadius:5, endRadius:300, steps:200 },
-        { name:'slow_large_circle', type:'circle', direction:1, radius:200, steps:250 },
-        { name:'smooth_wave', type:'sine_wave', direction:'horizontal', amplitude:150, frequency:0.05, speed:1.5, steps:300 },
-        { name:'organic_pour', type:'organic', smoothness:0.7, speed:1.2, steps:250 },
-        { name:'lissajous_smooth', type:'lissajous', xFreq:2, yFreq:3, radius:120, steps:300 }
-    ];
-
-    window.addEventListener('message', (event)=>{
-        if(event.data.type==='pianoKeyPress'){
-            const colors=event.data.colors||[];
-            const key=event.data.key;
-            if(colors.length===0) return;
-            const bestColors = selectBestColors(colors);
-            const numFluids = Math.floor(Math.random()*3)+3;
-            for(let i=0;i<numFluids;i++){
-                const pattern = MOVEMENT_PATTERNS[Math.floor(Math.random()*MOVEMENT_PATTERNS.length)];
-                const startX = Math.random() * (parentWidth || window.innerWidth);
-                const startY = Math.random() * (parentHeight || window.innerHeight);
-                setTimeout(()=>{ createProfessionalFluid(startX,startY,bestColors,pattern); }, i*60);
-            }
+// Tuş basınca fluid tetikle
+window.addEventListener('message', event=>{
+    if(event.data.type=='pianoKeyPress'){
+        const colors = event.data.colors||[];
+        const key = event.data.key;
+        if(colors.length==0) return;
+        const bestColors = selectBestColors(colors);
+        const numFluids = Math.floor(Math.random()*3)+3;
+        for(let i=0;i<numFluids;i++){
+            const pattern = MOVEMENT_PATTERNS[Math.floor(Math.random()*MOVEMENT_PATTERNS.length)];
+            const startX = Math.random()*(parentWidth||window.innerWidth);
+            const startY = Math.random()*(parentHeight||window.innerHeight);
+            setTimeout(()=>{ createProfessionalFluid(startX,startY,bestColors,pattern); }, i*60);
         }
-    });
-
-    function setPianoColor(color){
-        if(typeof CABLES==='undefined' || !CABLES.patch) return;
-        try{
-            const normalizedColor=[color.r/255,color.g/255,color.b/255];
-            CABLES.patch.setVariable('SplatColor',normalizedColor);
-        }catch(e){ console.warn('Renk set hatası'); }
     }
+});
 
-    function createProfessionalFluid(startX,startY,colors,pattern){
-        const canvas=document.getElementById('glcanvas');
-        if(!canvas) return;
-        const width=parentWidth||window.innerWidth;
-        const height=parentHeight||window.innerHeight;
+function setPianoColor(color){
+    if(typeof CABLES==='undefined' || !CABLES.patch) return;
+    try{ CABLES.patch.setVariable('SplatColor',[color.r/255,color.g/255,color.b/255]); }catch(e){}
+}
 
-        let step=0;
-        let colorIndex=0;
-        const maxSteps=pattern.steps;
-        let prevVelX=0, prevVelY=0;
+function createProfessionalFluid(startX,startY,colors,pattern){
+    const canvas = document.getElementById('glcanvas');
+    if(!canvas) return;
+    const width = parentWidth || window.innerWidth;
+    const height = parentHeight || window.innerHeight;
+    let step=0, colorIndex=0, maxSteps=pattern.steps;
+    let prevVelX=0, prevVelY=0;
 
-        setPianoColor(colors[0]); // başlangıçta ilk renk
+    setPianoColor(colors[0]); // ilk renk
 
-        // başlangıç pozisyonu
-        let currentX=startX;
-        let currentY=startY;
+    // Başlangıç pozisyonu
+    const startPos = calculatePosition(startX,startY,0,pattern,width,height,Math.random()*1000,Math.random()*1000,0,0);
+    let currentX=startPos.x, currentY=startPos.y;
+    prevVelX=startPos.velX||0; prevVelY=startPos.velY||0;
 
-        canvas.dispatchEvent(new MouseEvent('mousedown',{clientX:currentX,clientY:currentY,button:0,buttons:1,bubbles:true,cancelable:true}));
+    canvas.dispatchEvent(new MouseEvent('mousedown',{clientX:currentX,clientY:currentY,button:0,buttons:1,bubbles:true,cancelable:true}));
 
-        const interval=setInterval(()=>{
-            step++;
-            colorIndex=(colorIndex+1)%colors.length;
-            setPianoColor(colors[colorIndex]);
+    const interval = setInterval(()=>{
+        step++;
+        colorIndex=(colorIndex+1)%colors.length;
+        setPianoColor(colors[colorIndex]);
 
-            const newPos=calculatePosition(startX,startY,step,pattern,width,height,prevVelX,prevVelY);
-            currentX=newPos.x; currentY=newPos.y; prevVelX=newPos.velX||0; prevVelY=newPos.velY||0;
+        const newPos = calculatePosition(startX,startY,step,pattern,width,height,Math.random()*1000,Math.random()*1000,prevVelX,prevVelY);
+        currentX=newPos.x; currentY=newPos.y;
+        prevVelX=newPos.velX||0; prevVelY=newPos.velY||0;
 
-            canvas.dispatchEvent(new MouseEvent('mousemove',{clientX:currentX,clientY:currentY,button:0,buttons:1,bubbles:true,cancelable:true}));
+        canvas.dispatchEvent(new MouseEvent('mousemove',{clientX:currentX,clientY:currentY,button:0,buttons:1,bubbles:true,cancelable:true}));
 
-            if(step>=maxSteps){
-                clearInterval(interval);
-                canvas.dispatchEvent(new MouseEvent('mouseup',{clientX:currentX,clientY:currentY,button:0,buttons:0,bubbles:true,cancelable:true}));
-            }
-        },25);
-    }
-
-    function calculatePosition(startX,startY,step,pattern,width,height,prevVelX,prevVelY){
-        let x,y;
-        const progress=step/pattern.steps;
-
-        switch(pattern.type){
-            case 'circle':
-                const angleCircle=(step/pattern.steps)*Math.PI*2*pattern.direction;
-                x=startX+Math.cos(angleCircle)*pattern.radius;
-                y=startY+Math.sin(angleCircle)*pattern.radius;
-                break;
-
-            case 'expanding_spiral':
-                const angleExpand=(step/pattern.steps)*Math.PI*6*pattern.direction;
-                const radiusExpand=pattern.startRadius+(pattern.endRadius-pattern.startRadius)*progress;
-                x=startX+Math.cos(angleExpand)*radiusExpand;
-                y=startY+Math.sin(angleExpand)*radiusExpand;
-                break;
-
-            case 'sine_wave':
-                if(pattern.direction==='horizontal'){ x=startX+step*pattern.speed; y=startY+Math.sin(step*pattern.frequency)*pattern.amplitude; }
-                else{ x=startX+Math.sin(step*pattern.frequency)*pattern.amplitude; y=startY+step*pattern.speed; }
-                break;
-
-            case 'lissajous':
-                const t=progress*Math.PI*2;
-                x=startX+Math.sin(pattern.xFreq*t)*pattern.radius;
-                y=startY+Math.sin(pattern.yFreq*t)*pattern.radius;
-                break;
-
-            case 'organic':
-                const targetVelX=(Math.random()-0.5)*pattern.speed*3;
-                const targetVelY=(Math.random()-0.5)*pattern.speed*3;
-                const velX=prevVelX*pattern.smoothness+targetVelX*(1-pattern.smoothness);
-                const velY=prevVelY*pattern.smoothness+targetVelY*(1-pattern.smoothness);
-                x=startX+step*pattern.speed+velX*5;
-                y=startY+velY*5;
-                return {x,y,velX,velY};
-
-            default:
-                x=startX; y=startY;
+        if(step>=maxSteps){
+            clearInterval(interval);
+            canvas.dispatchEvent(new MouseEvent('mouseup',{clientX:currentX,clientY:currentY,button:0,buttons:0,bubbles:true,cancelable:true}));
         }
+    },25);
+}
 
-        return {x,y};
+function calculatePosition(startX,startY,step,pattern,width,height,noiseX,noiseY,prevVelX,prevVelY){
+    let x,y;
+    const progress=step/pattern.steps;
+    switch(pattern.type){
+        case 'circle':
+            const angleCircle=(step/pattern.steps)*Math.PI*2*pattern.direction;
+            x=startX+Math.cos(angleCircle)*pattern.radius;
+            y=startY+Math.sin(angleCircle)*pattern.radius;
+            break;
+        case 'expanding_spiral':
+            const angleExpand=(step/pattern.steps)*Math.PI*6*pattern.direction;
+            const radiusExpand=pattern.startRadius+(pattern.endRadius-pattern.startRadius)*progress;
+            x=startX+Math.cos(angleExpand)*radiusExpand;
+            y=startY+Math.sin(angleExpand)*radiusExpand;
+            break;
+        case 'sine_wave':
+            if(pattern.direction==='horizontal'){ x=startX+step*pattern.speed; y=startY+Math.sin(step*pattern.frequency)*pattern.amplitude; }
+            else { x=startX+Math.sin(step*pattern.frequency)*pattern.amplitude; y=startY+step*pattern.speed; }
+            break;
+        case 'lissajous':
+            const t=progress*Math.PI*2;
+            x=startX+Math.sin(pattern.xFreq*t)*pattern.radius;
+            y=startY+Math.sin(pattern.yFreq*t)*pattern.radius;
+            break;
+        case 'organic':
+            const targetVelX=(Math.random()-0.5)*pattern.speed*3;
+            const targetVelY=(Math.random()-0.5)*pattern.speed*3;
+            const velX=prevVelX*pattern.smoothness+targetVelX*(1-pattern.smoothness);
+            const velY=prevVelY*pattern.smoothness+targetVelY*(1-pattern.smoothness);
+            x=startX+step*pattern.speed+velX*5;
+            y=startY+velY*5;
+            return {x,y,velX,velY};
+        default: x=startX;y=startY;
     }
+    return {x,y};
+}
 
-    window.addEventListener('DOMContentLoaded',()=>{ forceFullScreenCanvas(); });
-
-    document.addEventListener("CABLES.jsLoaded",function(){
-        CABLES.patch=new CABLES.Patch({
-            patch:CABLES.exportedPatch,
-            prefixAssetPath:"",
-            assetPath:"assets/",
-            jsPath:"js/",
-            glCanvasId:"glcanvas",
-            glCanvasResizeToWindow:true,
-            onError:showError,
-            onPatchLoaded:patchInitialized,
-            onFinishedLoading:patchFinishedLoading,
-            canvas:{"alpha":true,"premultipliedAlpha":true}
-        });
-        hideStatsPanels();
-        setTimeout(forceFullScreenCanvas,50);
+window.addEventListener('DOMContentLoaded',()=>{ forceFullScreenCanvas(); });
+document.addEventListener("CABLES.jsLoaded",()=>{
+    CABLES.patch=new CABLES.Patch({
+        patch:CABLES.exportedPatch,
+        "prefixAssetPath":"",
+        "assetPath":"assets/",
+        "jsPath":"js/",
+        "glCanvasId":"glcanvas",
+        "glCanvasResizeToWindow":true,
+        "onError":()=>{},
+        "onPatchLoaded":patchInitialized,
+        "onFinishedLoading":patchFinishedLoading,
+        "canvas":{"alpha":true,"premultipliedAlpha":true}
     });
+    hideStatsPanels();
+    setTimeout(forceFullScreenCanvas,50);
+});
 
-    document.getElementById('glcanvas').addEventListener('touchmove', (e)=>{ e.preventDefault(); }, false);
-    setInterval(hideStatsPanels,1000);
-    setInterval(forceFullScreenCanvas,2000);
-
-    window.addEventListener('resize',()=>{
-        try{ if(window.parent!==window){ parentWidth=window.parent.innerWidth; parentHeight=window.parent.innerHeight; } }catch(e){ parentWidth=window.innerWidth; parentHeight=window.innerHeight; }
-        forceFullScreenCanvas();
-    });
-
-    window.addEventListener('message',(event)=>{
-        if(event.data.type==='parentResize'){ parentWidth=event.data.width; parentHeight=event.data.height; forceFullScreenCanvas(); }
-    });
-
-    </script>
+document.getElementById('glcanvas').addEventListener('touchmove', e=>{e.preventDefault();}, false);
+window.addEventListener('resize', ()=>{
+    try{ if(window.parent!==window){ parentWidth=window.parent.innerWidth; parentHeight=window.parent.innerHeight; } }catch(e){ parentWidth=window.innerWidth; parentHeight=window.innerHeight; }
+    forceFullScreenCanvas();
+});
+window.addEventListener('message', event=>{ if(event.data.type==='parentResize'){ parentWidth=event.data.width; parentHeight=event.data.height; forceFullScreenCanvas(); }});
+</script>
 </body>
 </html>
