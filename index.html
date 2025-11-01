@@ -167,16 +167,16 @@
                 name: 'large_circle_cw',
                 type: 'circle',
                 direction: 1,
-                radius: 150,
-                steps: 180,
+                radius: 450,
+                steps: 580,
                 centerOffset: { x: 0, y: 0 }
             },
             {
                 name: 'large_circle_ccw',
                 type: 'circle',
                 direction: -1,
-                radius: 150,
-                steps: 180,
+                radius: 450,
+                steps: 580,
                 centerOffset: { x: 0, y: 0 }
             },
             // 🟢 ORTA BOY DAİRELER
@@ -184,169 +184,54 @@
                 name: 'medium_circle_cw',
                 type: 'circle',
                 direction: 1,
-                radius: 90,
-                steps: 160,
+                radius: 300,
+                steps: 580,
                 centerOffset: { x: 0, y: 0 }
             },
             {
                 name: 'medium_circle_ccw',
                 type: 'circle',
                 direction: -1,
-                radius: 90,
-                steps: 160,
+                radius: 400,
+                steps: 560,
                 centerOffset: { x: 0, y: 0 }
-            },
-            // 🔴 KÜÇÜK DAİRELER - Yoğun detaylar
-            {
-                name: 'small_circle_cw',
-                type: 'circle',
-                direction: 1,
-                radius: 50,
-                steps: 140,
-                centerOffset: { x: 0, y: 0 }
-            },
-            {
-                name: 'small_circle_ccw',
-                type: 'circle',
-                direction: -1,
-                radius: 50,
-                steps: 140,
-                centerOffset: { x: 0, y: 0 }
+            
+        
             },
             // 🌀 SPIRAL HAREKETLER - İçten dışa genişleyen
             {
                 name: 'expanding_spiral_cw',
                 type: 'expanding_spiral',
                 direction: 1,
-                startRadius: 10,
-                endRadius: 120,
-                steps: 200
+                startRadius: 50,
+                endRadius: 500,
+                steps: 600
             },
             {
                 name: 'expanding_spiral_ccw',
                 type: 'expanding_spiral',
                 direction: -1,
-                startRadius: 10,
-                endRadius: 120,
-                steps: 200
+                startRadius: 50,
+                endRadius: 500,
+                steps: 600
             },
             // 🎯 DARALAN SPIRAL - Dıştan içe
             {
                 name: 'contracting_spiral_cw',
                 type: 'contracting_spiral',
                 direction: 1,
-                startRadius: 120,
-                endRadius: 10,
-                steps: 180
+                startRadius: 200,
+                endRadius: 300,
+                steps: 700
             },
             {
                 name: 'contracting_spiral_ccw',
                 type: 'contracting_spiral',
                 direction: -1,
-                startRadius: 120,
-                endRadius: 10,
-                steps: 180
-            },
-            // 〰️ SINÜS DALGASI - Dalgalı akış
-            {
-                name: 'sine_wave_horizontal',
-                type: 'sine_wave',
-                direction: 'horizontal',
-                amplitude: 60,
-                frequency: 0.15,
-                speed: 2,
-                steps: 180
-            },
-            {
-                name: 'sine_wave_vertical',
-                type: 'sine_wave',
-                direction: 'vertical',
-                amplitude: 60,
-                frequency: 0.15,
-                speed: 2,
-                steps: 180
-            },
-            // 🌊 LISSAJOUS EĞRİLERİ - Karmaşık harmonik hareketler
-            {
-                name: 'lissajous_3_2',
-                type: 'lissajous',
-                xFreq: 3,
-                yFreq: 2,
-                radius: 100,
-                steps: 200
-            },
-            {
-                name: 'lissajous_5_4',
-                type: 'lissajous',
-                xFreq: 5,
-                yFreq: 4,
-                radius: 80,
-                steps: 220
-            },
-            // 🔶 FİGÜR-8 (Infinity)
-            {
-                name: 'figure_eight',
-                type: 'figure_eight',
-                radius: 80,
-                steps: 180
-            },
-            // 🎨 PERLIN NOISE - Organik akış
-            {
-                name: 'perlin_flow_smooth',
-                type: 'perlin',
-                scale: 0.03,
-                speed: 1.5,
-                amplitude: 40,
-                steps: 200
-            },
-            {
-                name: 'perlin_flow_turbulent',
-                type: 'perlin',
-                scale: 0.05,
-                speed: 2,
-                amplitude: 60,
-                steps: 190
-            },
-            // 🌪️ VORTEX - Dönen helezon
-            {
-                name: 'vortex_tight',
-                type: 'vortex',
-                rotations: 4,
-                radius: 100,
-                steps: 200
-            },
-            {
-                name: 'vortex_loose',
-                type: 'vortex',
-                rotations: 2,
-                radius: 120,
-                steps: 180
-            },
-            // 🔷 ZİGZAG - Keskin geçişler
-            {
-                name: 'zigzag_sharp',
-                type: 'zigzag',
-                segments: 12,
-                amplitude: 50,
-                speed: 2,
-                steps: 170
-            },
-            // ⭐ YILDIZ ŞEKLİ
-            {
-                name: 'star_pattern',
-                type: 'star',
-                points: 5,
-                outerRadius: 100,
-                innerRadius: 50,
-                steps: 160
-            },
-            // 🌀 DOUBLE HELIX
-            {
-                name: 'double_helix',
-                type: 'double_helix',
-                radius: 70,
-                height: 150,
-                steps: 190
+                startRadius: 200,
+                endRadius: 300,
+                steps: 700
+           
             },
             // 📐 KÖŞEDEN KÖŞEYE - Smooth transitions
             {
@@ -370,15 +255,15 @@
                 name: 'organic_flow_smooth',
                 type: 'organic',
                 smoothness: 0.7,
-                speed: 1.8,
-                steps: 190
+                speed: 0.8,
+                steps: 500
             },
             {
                 name: 'organic_flow_chaotic',
                 type: 'organic',
                 smoothness: 0.4,
-                speed: 2.2,
-                steps: 180
+                speed: 0.2,
+                steps: 500
             }
         ];
 
