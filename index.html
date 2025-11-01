@@ -1,315 +1,117 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Piano Fluid - Living Art</title>
+    <meta charset="UTF-8">
+    <title>Piano Fluid Pouring</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <style>
-        * {
-            margin: 0 !important;
-            padding: 0 !important;
-            -webkit-tap-highlight-color: transparent;
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
-            box-sizing: border-box !important;
-        }
-
         html, body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #000;
             width: 100%;
             height: 100%;
-            overflow: hidden;
-            background-color: transparent !important;
-            color: #fff;
-            font-family: Helvetica, Arial, sans-serif;
-            position: relative;
         }
-
-        #glcanvas {
-            display: block !important;
-            position: absolute !important;
-            top: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            bottom: 0 !important;
-            width: 100% !important;
-            height: 100% !important;
-            outline: 0 !important;
-            transform: none !important;
-            background: transparent !important;
-        }
-
-        /* FPS/CPU yazılarını gizle */
-        div[style*="position: absolute"],
-        div[style*="fixed"],
-        .cables-stats,
-        .stats-panel {
-            display: none !important;
-            visibility: hidden !important;
+        canvas {
+            display: block;
         }
     </style>
-
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
 </head>
 <body>
-    <canvas id="glcanvas" tabindex="1"></canvas>
+<canvas id="glcanvas"></canvas>
+<script>
+    const canvas = document.getElementById('glcanvas');
+    const ctx = canvas.getContext('2d');
+    let width = canvas.width = window.innerWidth;
+    let height = canvas.height = window.innerHeight;
 
-    <script type="text/javascript" src="js/patch.js" async></script>
+    // Her tuş için ana renkler
+    const keyColors = {
+        'C': [{r: 255, g: 0, b: 0}], 
+        'D': [{r: 0, g: 255, b: 0}],
+        'E': [{r: 0, g: 0, b: 255}],
+        'F': [{r: 255, g: 255, b: 0}],
+        'G': [{r: 0, g: 255, b: 255}],
+        'A': [{r: 255, g: 0, b: 255}],
+        'B': [{r: 255, g: 128, b: 0}]
+    };
 
-    <script type="text/javascript">
+    function randomChoice(arr) {
+        return arr[Math.floor(Math.random() * arr.length)];
+    }
 
-        function showError(initiator,...args) {}
-        let parentWidth = window.innerWidth;
-        let parentHeight = window.innerHeight;
+    // Mouse tabanlı sürükleme için basit fluid
+    function createFluid(startX, startY, colors) {
+        let step = 0;
+        const maxSteps = 300;
+        let x = startX;
+        let y = startY;
+        let colorIndex = 0;
 
-        if (window.parent !== window) {
-            try {
-                parentWidth = window.parent.innerWidth;
-                parentHeight = window.parent.innerHeight;
-            } catch(e) {}
-        }
+        // Başlangıç rengi
+        ctx.fillStyle = `rgb(${colors[0].r},${colors[0].g},${colors[0].b})`;
 
-        function forceFullScreenCanvas() {
-            const canvas = document.getElementById('glcanvas');
-            if (!canvas) return;
-            const width = parentWidth || window.innerWidth;
-            const height = parentHeight || window.innerHeight;
-            canvas.width = width;
-            canvas.height = height;
-            canvas.style.width = width + 'px';
-            canvas.style.height = height + 'px';
-        }
+        function drawStep() {
+            if (step > maxSteps) return;
 
-        function patchInitialized(patch) {
-            console.log('✅ Fluid hazır!');
-            hideStatsPanels();
-            forceFullScreenCanvas();
-        }
+            // Spiral ve rastgele dalgalanma
+            const angle = step * 0.2;
+            const radius = 20 + step * 0.5;
+            const dx = radius * Math.cos(angle) * (Math.random()*0.5+0.75);
+            const dy = radius * Math.sin(angle) * (Math.random()*0.5+0.75);
 
-        function patchFinishedLoading(patch) {
-            console.log('🎨 Yükleme tamamlandı!');
-            hideStatsPanels();
-            forceFullScreenCanvas();
-        }
+            x += dx * (Math.random()*0.5 + 0.75);
+            y += dy * (Math.random()*0.5 + 0.75);
 
-        function hideStatsPanels() {
-            setTimeout(() => {
-                document.querySelectorAll('div').forEach(div => {
-                    const style = div.getAttribute('style');
-                    if (style && (style.includes('position: absolute') || style.includes('position: fixed'))) {
-                        div.style.display = 'none';
-                        div.style.visibility = 'hidden';
-                    }
-                });
-            }, 100);
-        }
+            // Tuval sınırları
+            if (x < 0) x = 0;
+            if (x > width) x = width;
+            if (y < 0) y = 0;
+            if (y > height) y = height;
 
-        // 🎨 EN CANLI ANA RENKLERİ SEÇ
-        function selectBestColors(colors) {
-            if (!colors || colors.length === 0) {
-                return [
-                    {r:255,g:100,b:200},
-                    {r:100,g:200,b:255},
-                    {r:255,g:200,b:100}
-                ];
+            // Keskin renk değişimi: her 15 adımda
+            if (step % 15 === 0) {
+                colorIndex = (colorIndex + 1) % colors.length;
+                const c = colors[colorIndex];
+                ctx.fillStyle = `rgb(${c.r},${c.g},${c.b})`;
             }
-            const vibrant = colors.filter(c=>{
-                const bright=(c.r+c.g+c.b)/3;
-                const sat=Math.max(c.r,c.g,c.b)-Math.min(c.r,c.g,c.b);
-                return bright>50&&bright<220&&sat>40;
-            });
-            const working=vibrant.length?vibrant:colors;
-            const sorted=[...working].sort((a,b)=>{
-                const sa=Math.max(a.r,a.g,a.b)-Math.min(a.r,a.g,a.b);
-                const sb=Math.max(b.r,b.g,b.b)-Math.min(b.r,b.g,b.b);
-                return sb-sa;
-            });
-            return sorted.slice(0,15);
+
+            ctx.beginPath();
+            ctx.arc(x, y, Math.random()*10+15, 0, Math.PI*2);
+            ctx.fill();
+
+            step++;
+            requestAnimationFrame(drawStep);
         }
 
-        // 🌀 PATTERNLER
-        const MOVEMENT_PATTERNS = [
-            {name:'gentle_spiral_right',type:'expanding_spiral',direction:1,startRadius:5,endRadius:100,steps:250},
-            {name:'gentle_spiral_left',type:'expanding_spiral',direction:-1,startRadius:5,endRadius:100,steps:250},
-            {name:'slow_large_circle',type:'circle',direction:1,radius:120,steps:280},
-            {name:'slow_medium_circle',type:'circle',direction:-1,radius:80,steps:260},
-            {name:'smooth_wave',type:'sine_wave',direction:'horizontal',amplitude:50,frequency:0.08,speed:1.2,steps:270},
-            {name:'organic_pour',type:'organic',smoothness:0.85,speed:1.2,steps:260},
-            {name:'lissajous_smooth',type:'lissajous',xFreq:2,yFreq:3,radius:90,steps:300}
-        ];
+        drawStep();
+    }
 
-        // 🎹 PİYANO MESAJ SİSTEMİ
-        window.addEventListener('message', (event) => {
-            if (event.data.type === 'pianoKeyPress') {
-                const colors = event.data.colors || [];
-                const key = event.data.key;
-                if (colors.length === 0) return;
-                const bestColors = selectBestColors(colors);
-                if (bestColors.length === 0) return;
+    // Piyano tuşuna basma simülasyonu
+    function playKey(key) {
+        const colors = keyColors[key] || [{r:255,g:255,b:255}];
+        const startX = Math.random()*width;
+        const startY = Math.random()*height;
+        const numFluids = 3 + Math.floor(Math.random()*3);
 
-                const numFluids = Math.floor(Math.random() * 3) + 3;
-                console.log(`🎹 ${key.toUpperCase()} → ${numFluids} multi-color fluid!`);
-
-                for (let i = 0; i < numFluids; i++) {
-                    const pattern = MOVEMENT_PATTERNS[Math.floor(Math.random() * MOVEMENT_PATTERNS.length)];
-                    const startX = Math.random() * (parentWidth || window.innerWidth);
-                    const startY = Math.random() * (parentHeight || window.innerHeight);
-                    setTimeout(() => {
-                        createProfessionalFluid(startX, startY, bestColors, pattern);
-                    }, i * 60);
-                }
-            }
-        });
-
-        function setPianoColor(color) {
-            if (typeof CABLES === 'undefined' || !CABLES.patch) return;
-            try {
-                const norm = [color.r/255, color.g/255, color.b/255];
-                CABLES.patch.setVariable('SplatColor', norm);
-            } catch(e) {}
+        for (let i=0; i<numFluids; i++) {
+            setTimeout(() => createFluid(startX, startY, colors), i*60);
         }
+    }
 
-        // 🌈 GELİŞMİŞ PROFESYONEL FLUID
-        function createProfessionalFluid(startX, startY, colors, pattern) {
-            const canvas = document.getElementById('glcanvas');
-            if (!canvas) return;
+    // Test için rastgele tuş basmaları
+    const keys = Object.keys(keyColors);
+    setInterval(() => {
+        const key = randomChoice(keys);
+        playKey(key);
+    }, 800);
 
-            const width = parentWidth || window.innerWidth;
-            const height = parentHeight || window.innerHeight;
-            let step = 0, colorIndex = 0;
-            const maxSteps = pattern.steps;
-            let noiseOffsetX = Math.random() * 1000;
-            let noiseOffsetY = Math.random() * 1000;
-            let prevX = startX, prevY = startY;
-
-            setPianoColor(colors[0]);
-
-            const startPos = calculatePosition(startX, startY, 0, pattern, width, height, noiseOffsetX, noiseOffsetY, 0, 0);
-            let currentX = startPos.x, currentY = startPos.y;
-
-            canvas.dispatchEvent(new MouseEvent('mousedown', {
-                clientX: currentX, clientY: currentY, button: 0, buttons: 1, bubbles: true, cancelable: true
-            }));
-
-            function easeInOut(t){return t<0.5?2*t*t:-1+(4-2*t)*t;}
-
-            const interval=setInterval(()=>{
-                step++;
-                colorIndex=(colorIndex+1)%colors.length;
-                setPianoColor(colors[colorIndex]);
-                const easedStep=easeInOut(step/maxSteps)*maxSteps;
-                const newPos=calculatePosition(startX,startY,easedStep,pattern,width,height,noiseOffsetX,noiseOffsetY,0,0);
-                const movementX=newPos.x-prevX;
-                const movementY=newPos.y-prevY;
-                prevX=newPos.x; prevY=newPos.y;
-                currentX=newPos.x; currentY=newPos.y;
-
-                // Gerçek fare hareketi simülasyonu
-                canvas.dispatchEvent(new MouseEvent('mousemove',{
-                    clientX:currentX, clientY:currentY,
-                    movementX:movementX, movementY:movementY,
-                    bubbles:true, buttons:1, cancelable:true
-                }));
-
-                // Hafif titreşim (doğal his)
-                currentX += (Math.random()-0.5)*2;
-                currentY += (Math.random()-0.5)*2;
-
-                if(step>=maxSteps){
-                    clearInterval(interval);
-                    canvas.dispatchEvent(new MouseEvent('mouseup',{
-                        clientX:currentX, clientY:currentY,
-                        button:0, buttons:0, bubbles:true, cancelable:true
-                    }));
-                }
-            },16);
-        }
-
-        // Pozisyon hesaplayıcı (aynı seninki)
-        function calculatePosition(startX,startY,step,pattern,width,height,noiseX,noiseY,prevVelX,prevVelY){
-            let x,y;
-            const progress=step/pattern.steps;
-            switch(pattern.type){
-                case 'circle':
-                    const angleC=progress*Math.PI*2*pattern.direction;
-                    x=startX+Math.cos(angleC)*pattern.radius;
-                    y=startY+Math.sin(angleC)*pattern.radius;
-                    break;
-                case 'expanding_spiral':
-                    const angleS=progress*Math.PI*6*pattern.direction;
-                    const r=pattern.startRadius+(pattern.endRadius-pattern.startRadius)*progress;
-                    x=startX+Math.cos(angleS)*r;
-                    y=startY+Math.sin(angleS)*r;
-                    break;
-                case 'sine_wave':
-                    if(pattern.direction==='horizontal'){
-                        x=startX+step*pattern.speed;
-                        y=startY+Math.sin(step*pattern.frequency)*pattern.amplitude;
-                    } else {
-                        x=startX+Math.sin(step*pattern.frequency)*pattern.amplitude;
-                        y=startY+step*pattern.speed;
-                    }
-                    break;
-                case 'lissajous':
-                    const t=progress*Math.PI*2;
-                    x=startX+Math.sin(pattern.xFreq*t)*pattern.radius;
-                    y=startY+Math.sin(pattern.yFreq*t)*pattern.radius;
-                    break;
-                case 'organic':
-                    const tVelX=(Math.random()-0.5)*pattern.speed*3;
-                    const tVelY=(Math.random()-0.5)*pattern.speed*3;
-                    const vX=prevVelX*pattern.smoothness+tVelX*(1-pattern.smoothness);
-                    const vY=prevVelY*pattern.smoothness+tVelY*(1-pattern.smoothness);
-                    x=startX+step*pattern.speed+vX*5;
-                    y=startY+vY*5;
-                    return {x,y,velX:vX,velY:vY};
-                default:
-                    x=startX; y=startY;
-            }
-            return {x,y};
-        }
-
-        window.addEventListener('DOMContentLoaded',forceFullScreenCanvas);
-        document.addEventListener("CABLES.jsLoaded",()=>{
-            forceFullScreenCanvas();
-            CABLES.patch=new CABLES.Patch({
-                patch:CABLES.exportedPatch,
-                prefixAssetPath:"",
-                assetPath:"assets/",
-                jsPath:"js/",
-                glCanvasId:"glcanvas",
-                glCanvasResizeToWindow:true,
-                onError:showError,
-                onPatchLoaded:patchInitialized,
-                onFinishedLoading:patchFinishedLoading,
-                canvas:{alpha:true,premultipliedAlpha:true}
-            });
-            hideStatsPanels();
-        });
-
-        document.getElementById('glcanvas').addEventListener('touchmove',e=>e.preventDefault(),false);
-        setInterval(hideStatsPanels,1000);
-        setInterval(forceFullScreenCanvas,2000);
-        window.addEventListener('resize',()=>{
-            try{
-                if(window.parent!==window){
-                    parentWidth=window.parent.innerWidth;
-                    parentHeight=window.parent.innerHeight;
-                }
-            }catch(e){
-                parentWidth=window.innerWidth;
-                parentHeight=window.innerHeight;
-            }
-            forceFullScreenCanvas();
-        });
-        window.addEventListener('message',e=>{
-            if(e.data.type==='parentResize'){
-                parentWidth=e.data.width;
-                parentHeight=e.data.height;
-                forceFullScreenCanvas();
-            }
-        });
-    </script>
+    // Yeniden boyutlama
+    window.addEventListener('resize', () => {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+    });
+</script>
 </body>
 </html>
