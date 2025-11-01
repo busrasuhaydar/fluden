@@ -167,7 +167,7 @@
                 name: 'large_circle_cw',
                 type: 'circle',
                 direction: 1,
-                radius: 450,
+                radius: 750,
                 steps: 580,
                 centerOffset: { x: 0, y: 0 }
             },
@@ -175,62 +175,9 @@
                 name: 'large_circle_ccw',
                 type: 'circle',
                 direction: -1,
-                radius: 450,
+                radius: 750,
                 steps: 580,
                 centerOffset: { x: 0, y: 0 }
-            },
-            // 🟢 ORTA BOY DAİRELER
-            {
-                name: 'medium_circle_cw',
-                type: 'circle',
-                direction: 1,
-                radius: 300,
-                steps: 580,
-                centerOffset: { x: 0, y: 0 }
-            },
-            {
-                name: 'medium_circle_ccw',
-                type: 'circle',
-                direction: -1,
-                radius: 400,
-                steps: 560,
-                centerOffset: { x: 0, y: 0 }
-            
-        
-            },
-            // 🌀 SPIRAL HAREKETLER - İçten dışa genişleyen
-            {
-                name: 'expanding_spiral_cw',
-                type: 'expanding_spiral',
-                direction: 1,
-                startRadius: 50,
-                endRadius: 500,
-                steps: 600
-            },
-            {
-                name: 'expanding_spiral_ccw',
-                type: 'expanding_spiral',
-                direction: -1,
-                startRadius: 50,
-                endRadius: 500,
-                steps: 600
-            },
-            // 🎯 DARALAN SPIRAL - Dıştan içe
-            {
-                name: 'contracting_spiral_cw',
-                type: 'contracting_spiral',
-                direction: 1,
-                startRadius: 200,
-                endRadius: 300,
-                steps: 700
-            },
-            {
-                name: 'contracting_spiral_ccw',
-                type: 'contracting_spiral',
-                direction: -1,
-                startRadius: 200,
-                endRadius: 300,
-                steps: 700
            
             },
             // 📐 KÖŞEDEN KÖŞEYE - Smooth transitions
@@ -254,14 +201,14 @@
             {
                 name: 'organic_flow_smooth',
                 type: 'organic',
-                smoothness: 0.7,
+                smoothness: 5.7,
                 speed: 0.8,
                 steps: 500
             },
             {
                 name: 'organic_flow_chaotic',
                 type: 'organic',
-                smoothness: 0.4,
+                smoothness: 5.4,
                 speed: 0.2,
                 steps: 500
             }
@@ -441,72 +388,8 @@
                     x = startX + Math.cos(angleCircle) * pattern.radius;
                     y = startY + Math.sin(angleCircle) * pattern.radius;
                     break;
-                    
-                case 'expanding_spiral':
-                    const angleExpand = (step / pattern.steps) * Math.PI * 6 * pattern.direction;
-                    const radiusExpand = pattern.startRadius + (pattern.endRadius - pattern.startRadius) * progress;
-                    x = startX + Math.cos(angleExpand) * radiusExpand;
-                    y = startY + Math.sin(angleExpand) * radiusExpand;
-                    break;
-                    
-                case 'contracting_spiral':
-                    const angleContract = (step / pattern.steps) * Math.PI * 6 * pattern.direction;
-                    const radiusContract = pattern.startRadius - (pattern.startRadius - pattern.endRadius) * progress;
-                    x = startX + Math.cos(angleContract) * radiusContract;
-                    y = startY + Math.sin(angleContract) * radiusContract;
-                    break;
-                    
-                case 'sine_wave':
-                    if (pattern.direction === 'horizontal') {
-                        x = startX + step * pattern.speed;
-                        y = startY + Math.sin(step * pattern.frequency) * pattern.amplitude;
-                    } else {
-                        x = startX + Math.sin(step * pattern.frequency) * pattern.amplitude;
-                        y = startY + step * pattern.speed;
-                    }
-                    break;
-                    
-                case 'lissajous':
-                    const t = progress * Math.PI * 2;
-                    x = startX + Math.sin(pattern.xFreq * t) * pattern.radius;
-                    y = startY + Math.sin(pattern.yFreq * t) * pattern.radius;
-                    break;
-                    
-                case 'figure_eight':
-                    const t8 = progress * Math.PI * 2;
-                    x = startX + Math.sin(t8) * pattern.radius;
-                    y = startY + Math.sin(t8 * 2) * pattern.radius * 0.5;
-                    break;
-                    
-                case 'perlin':
-                    // Basit Perlin-like noise simulation
-                    const nx = Math.sin(step * pattern.scale + noiseX) * pattern.amplitude;
-                    const ny = Math.cos(step * pattern.scale + noiseY) * pattern.amplitude;
-                    x = startX + step * pattern.speed + nx;
-                    y = startY + ny;
-                    break;
-                    
-                case 'vortex':
-                    const angleVortex = (progress * Math.PI * 2 * pattern.rotations);
-                    const radiusVortex = pattern.radius * (1 - progress * 0.5);
-                    x = startX + Math.cos(angleVortex) * radiusVortex;
-                    y = startY + Math.sin(angleVortex) * radiusVortex;
-                    break;
-                    
-                case 'zigzag':
-                    const segment = Math.floor(progress * pattern.segments);
-                    const inSegment = (progress * pattern.segments) - segment;
-                    x = startX + step * pattern.speed;
-                    y = startY + (segment % 2 === 0 ? 1 : -1) * pattern.amplitude * inSegment;
-                    break;
-                    
-                case 'star':
-                    const angleStar = (progress * Math.PI * 2 * pattern.points * 2);
-                    const isOuter = Math.floor(progress * pattern.points * 2) % 2 === 0;
-                    const radiusStar = isOuter ? pattern.outerRadius : pattern.innerRadius;
-                    x = startX + Math.cos(angleStar) * radiusStar;
-                    y = startY + Math.sin(angleStar) * radiusStar;
-                    break;
+     
+              
                     
                 case 'double_helix':
                     const tHelix = progress * Math.PI * 4;
