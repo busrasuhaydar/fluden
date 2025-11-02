@@ -93,7 +93,7 @@
             "d5": [{r: 12, g: 12, b: 12},{r: 255, g: 69, b: 1},{r: 6, g: 41, b: 57},{r: 38, g: 123, b: 192},{r: 233, g: 117, b: 25},{r: 237, g: 0, b: 17},{r: 221, g: 116, b: 0},{r: 28, g: 28, b: 28},{r: 195, g: 131, b: 155},{r: 255, g: 55, b: 1}]
         };
 
-        // 🧹 CANVAS TEMİZLİK SİSTEMİ - BASİT VERSİYON
+        // 🧹 CANVAS TEMİZLİK & RENK SİSTEMİ
         let activeFluidCount = 0;
         let cleanupTimer = null;
 
@@ -171,9 +171,44 @@
                 const startY = Math.random() * 0.6 * parentHeight + 0.2 * parentHeight;
                 
                 activeFluidCount++;
+                
+                // Cleanup timer'ı iptal et (yeni fluid başlıyor)
+                if (cleanupTimer) {
+                    clearTimeout(cleanupTimer);
+                    cleanupTimer = null;
+                }
+                
                 createFluidFlow(startX, startY, keyColors, pattern);
             }
         });
+
+        // 🎨 RENK SİSTEMİ - CABLES patch'e müdahale etmeden
+        function setPianoColor(color) {
+            if (typeof CABLES === 'undefined' || !CABLES.patch) return;
+            
+            try {
+                const normalizedColor = [
+                    color.r / 255,
+                    color.g / 255,
+                    color.b / 255
+                ];
+                
+                // ops[13] SplatOp'a rengi gönder
+                const splatOp = CABLES.patch.ops[13];
+                if (splatOp && splatOp.setUiAttribs) {
+                    // Port üzerinden renk set et
+                    const colorPort = splatOp.getPort('color');
+                    if (colorPort) {
+                        colorPort.set(normalizedColor);
+                    }
+                }
+                
+                // Direkt variable set de dene
+                CABLES.patch.setVariable('SplatColor', normalizedColor);
+            } catch(e) {
+                // Sessizce devam et
+            }
+        }
 
         // 🎨 HSL Color Blending
         function rgbToHsl(r, g, b) {
@@ -237,35 +272,49 @@
             return hslToRgb(h, s, l);
         }
 
-        // Renk set fonksiyonu - mouse event'e custom property ekle
-        let nextSplatColor = null;
-
-        function setNextSplatColor(color) {
-            nextSplatColor = {
-                r: color.r / 255,
-                g: color.g / 255,
-                b: color.b / 255
-            };
+        // 🧹 Canvas temizlik fonksiyonu
+        function scheduleCleanup() {
+            if (cleanupTimer) {
+                clearTimeout(cleanupTimer);
+            }
+            
+            cleanupTimer = setTimeout(() => {
+                if (activeFluidCount === 0) {
+                    console.log('🧹 Canvas fade başlıyor...');
+                    fadeOutCanvas();
+                }
+            }, 3000);
         }
 
-        // Mouse event'leri intercept et
-        const originalAddEventListener = HTMLCanvasElement.prototype.addEventListener;
-        HTMLCanvasElement.prototype.addEventListener = function(type, listener, options) {
-            if (type === 'mousedown' || type === 'mousemove') {
-                const wrappedListener = function(e) {
-                    // Eğer bir sonraki renk set edildiyse, event'e ekle
-                    if (nextSplatColor && type === 'mousedown') {
-                        e.splatColor = nextSplatColor;
-                        console.log('🎨 Renk event\'e eklendi:', nextSplatColor);
-                    }
-                    return listener.call(this, e);
-                };
-                return originalAddEventListener.call(this, type, wrappedListener, options);
-            }
-            return originalAddEventListener.call(this, type, listener, options);
-        };
+        // Canvas'ı yavaşça fade out yap
+        function fadeOutCanvas() {
+            const canvas = document.getElementById('glcanvas');
+            if (!canvas) return;
+            
+            const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+            if (!gl) return;
+            
+            let fadeOpacity = 1.0;
+            const fadeInterval = setInterval(() => {
+                fadeOpacity -= 0.02;
+                
+                if (fadeOpacity <= 0) {
+                    clearInterval(fadeInterval);
+                    // Tamamen temizle
+                    gl.clearColor(0, 0, 0, 1);
+                    gl.clear(gl.COLOR_BUFFER_BIT);
+                    console.log('✅ Canvas temizlendi');
+                } else {
+                    // Yarı saydam siyah ile kaplama
+                    gl.enable(gl.BLEND);
+                    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+                    gl.clearColor(0, 0, 0, 0.02);
+                    gl.clear(gl.COLOR_BUFFER_BIT);
+                }
+            }, 50);
+        }
 
-        // 🌊 FLUID AKIŞI - BASİT AMA ÇALIŞAN
+        // 🌊 FLUID AKIŞI - ORJİNAL MANTIK
         function createFluidFlow(startX, startY, colors, pattern) {
             const canvas = document.getElementById('glcanvas');
             if (!canvas) return;
@@ -274,7 +323,7 @@
             const height = parentHeight || window.innerHeight;
             
             const TOTAL_FRAMES = 200;
-            const FRAME_DURATION = 20;
+            const FRAME_DURATION = 18;
             
             let frameIndex = 0;
             const basePath = generateBasePath(startX, startY, pattern, width, height, TOTAL_FRAMES);
@@ -282,73 +331,89 @@
             let currentX = basePath[startFrame].x;
             let currentY = basePath[startFrame].y;
             
-            console.log(`🎨 Fluid başlıyor: ${colors.length} renk`);
+            console.log(`🎨 Fluid başlıyor: ${colors.length} renk (${activeFluidCount} aktif)`);
             
-            // İlk rengi set et
-            setNextSplatColor(colors[0]);
+            // 1️⃣ İLK RENGİ ÖNCE SET ET - 3 KEZ
+            setPianoColor(colors[0]);
             
-            // Mousedown
-            canvas.dispatchEvent(new MouseEvent('mousedown', {
-                clientX: currentX,
-                clientY: currentY,
-                button: 0,
-                buttons: 1,
-                bubbles: true
-            }));
-            
-            // Animasyon
-            const animationInterval = setInterval(() => {
-                frameIndex++;
+            setTimeout(() => {
+                setPianoColor(colors[0]);
                 
-                if (frameIndex >= TOTAL_FRAMES - startFrame) {
-                    clearInterval(animationInterval);
+                setTimeout(() => {
+                    setPianoColor(colors[0]);
                     
-                    canvas.dispatchEvent(new MouseEvent('mouseup', {
-                        clientX: currentX,
-                        clientY: currentY,
-                        button: 0,
-                        buttons: 0,
-                        bubbles: true
-                    }));
-                    
-                    console.log('✅ Fluid tamamlandı');
-                    activeFluidCount--;
-                    
-                    return;
-                }
-                
-                const actualFrame = frameIndex + startFrame;
-                const progress = frameIndex / (TOTAL_FRAMES - startFrame);
-                const colorProgress = progress * (colors.length - 1);
-                const colorIndex = Math.floor(colorProgress);
-                const colorBlend = colorProgress - colorIndex;
-                
-                // Renk geçişi
-                if (colorIndex < colors.length - 1) {
-                    const blendedColor = blendColors(
-                        colors[colorIndex], 
-                        colors[colorIndex + 1], 
-                        colorBlend
-                    );
-                    setNextSplatColor(blendedColor);
-                }
-                
-                // Hareket
-                if (actualFrame < basePath.length) {
-                    currentX = basePath[actualFrame].x;
-                    currentY = basePath[actualFrame].y;
-                    currentX = Math.max(20, Math.min(width - 20, currentX));
-                    currentY = Math.max(20, Math.min(height - 20, currentY));
-                    
-                    canvas.dispatchEvent(new MouseEvent('mousemove', {
+                    // 2️⃣ MOUSEDOWN
+                    canvas.dispatchEvent(new MouseEvent('mousedown', {
                         clientX: currentX,
                         clientY: currentY,
                         button: 0,
                         buttons: 1,
                         bubbles: true
                     }));
-                }
-            }, FRAME_DURATION);
+                    
+                    // 3️⃣ ANİMASYON
+                    setTimeout(() => {
+                        const animationInterval = setInterval(() => {
+                            frameIndex++;
+                            
+                            if (frameIndex >= TOTAL_FRAMES - startFrame) {
+                                clearInterval(animationInterval);
+                                
+                                canvas.dispatchEvent(new MouseEvent('mouseup', {
+                                    clientX: currentX,
+                                    clientY: currentY,
+                                    button: 0,
+                                    buttons: 0,
+                                    bubbles: true
+                                }));
+                                
+                                console.log('✅ Fluid tamamlandı');
+                                activeFluidCount--;
+                                
+                                if (activeFluidCount === 0) {
+                                    scheduleCleanup();
+                                }
+                                
+                                return;
+                            }
+                            
+                            const actualFrame = frameIndex + startFrame;
+                            const progress = frameIndex / (TOTAL_FRAMES - startFrame);
+                            const colorProgress = progress * (colors.length - 1);
+                            const colorIndex = Math.floor(colorProgress);
+                            const colorBlend = colorProgress - colorIndex;
+                            
+                            // Renk geçişi
+                            if (colorIndex < colors.length - 1) {
+                                const blendedColor = blendColors(
+                                    colors[colorIndex], 
+                                    colors[colorIndex + 1], 
+                                    colorBlend
+                                );
+                                setPianoColor(blendedColor);
+                            } else {
+                                setPianoColor(colors[colors.length - 1]);
+                            }
+                            
+                            // Hareket
+                            if (actualFrame < basePath.length) {
+                                currentX = basePath[actualFrame].x;
+                                currentY = basePath[actualFrame].y;
+                                currentX = Math.max(20, Math.min(width - 20, currentX));
+                                currentY = Math.max(20, Math.min(height - 20, currentY));
+                                
+                                canvas.dispatchEvent(new MouseEvent('mousemove', {
+                                    clientX: currentX,
+                                    clientY: currentY,
+                                    button: 0,
+                                    buttons: 1,
+                                    bubbles: true
+                                }));
+                            }
+                        }, FRAME_DURATION);
+                    }, 50);
+                }, 80);
+            }, 80);
         }
 
         function generateBasePath(startX, startY, pattern, width, height, pointCount) {
