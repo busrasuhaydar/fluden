@@ -25,7 +25,7 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
-            background-color: transparent !important;
+            background-color: #000000 !important;
             color: #fff;
             font-family: Helvetica, Arial, sans-serif;
             position: relative;
@@ -94,8 +94,10 @@
             "d5": [{r: 12, g: 12, b: 12},{r: 255, g: 69, b: 1},{r: 6, g: 41, b: 57},{r: 38, g: 123, b: 192},{r: 233, g: 117, b: 25},{r: 237, g: 0, b: 17},{r: 221, g: 116, b: 0},{r: 28, g: 28, b: 28},{r: 195, g: 131, b: 155},{r: 255, g: 55, b: 1}]
         };
 
-        // 🧹 CANVAS TEMİZLİK SİSTEMİ
+        // 🧹 CANVAS AUTO-CLEAR SİSTEMİ
         let activeFluidCount = 0;
+        let lastClearTime = Date.now();
+        let autoClearInterval = null;
 
         function forceFullScreenCanvas() {
             const canvas = document.getElementById('glcanvas');
@@ -113,26 +115,43 @@
             canvas.style.left = '0';
         }
 
+        // 🎯 CANVAS TEMİZLEME FONKSİYONU
+        function clearCanvas() {
+            const canvas = document.getElementById('glcanvas');
+            if (!canvas) return;
+            
+            try {
+                const gl = canvas.getContext('webgl') || canvas.getContext('webgl2') || canvas.getContext('experimental-webgl');
+                if (gl) {
+                    // Canvas'ı siyaha boyayarak temizle
+                    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                    console.log('🧹 Canvas WebGL ile temizlendi');
+                }
+            } catch(e) {
+                console.log('⚠️ WebGL temizleme hatası:', e);
+            }
+        }
+
+        // 🔄 OTOMATİK TEMİZLEME - Her 5 saniyede bir
+        function startAutoClear() {
+            if (autoClearInterval) clearInterval(autoClearInterval);
+            
+            autoClearInterval = setInterval(() => {
+                const now = Date.now();
+                // 5 saniyedir yeni fluid yoksa temizle
+                if (now - lastClearTime > 5000 && activeFluidCount === 0) {
+                    clearCanvas();
+                    lastClearTime = now;
+                }
+            }, 5000);
+        }
+
         function patchInitialized(patch) {
             console.log('✅ Fluid hazır!');
             
-            // 🎯 ÇÖZÜM: DISSIPATION VE SPLAT AYARLARI
-            try {
-                if (typeof CABLES !== 'undefined' && CABLES.patch) {
-                    // Renkler hızlı kaybolsun (varsayılan ~0.99)
-                    CABLES.patch.setVariable('DyeDissipation', 0.96);
-                    
-                    // Velocity çok hızlı kaybolsun (varsayılan ~0.98)
-                    CABLES.patch.setVariable('VelocityDissipation', 0.92);
-                    
-                    // Splat daha küçük olsun (daha az karışma)
-                    CABLES.patch.setVariable('SplatRadius', 0.0025);
-                    
-                    console.log('🎨 Fluid ayarları optimize edildi');
-                }
-            } catch(e) {
-                console.log('⚠️ Dissipation ayarları yapılamadı:', e);
-            }
+            // Otomatik temizleme başlat
+            startAutoClear();
             
             hideStatsPanels();
             forceFullScreenCanvas();
@@ -162,18 +181,18 @@
             }, 100);
         }
 
-        // 🌊 HAREKET PATTERNLERİ - ORJİNAL
+        // 🌊 HAREKET PATTERNLERİ - DAHA KISA SÜRELER
         const FLOW_PATTERNS = [
-            { type: 'circle', radius: 160, clockwise: true },
-            { type: 'circle', radius: 160, clockwise: false },
-            { type: 'circle', radius: 130, clockwise: true },
-            { type: 'spiral', startRadius: 50, endRadius: 150, clockwise: true },
-            { type: 'spiral', startRadius: 150, endRadius: 50, clockwise: false },
-            { type: 's_curve', amplitude: 90, length: 320 },
-            { type: 'wave', amplitude: 80, wavelength: 220, length: 360 }
+            { type: 'circle', radius: 120, clockwise: true },
+            { type: 'circle', radius: 120, clockwise: false },
+            { type: 'circle', radius: 100, clockwise: true },
+            { type: 'spiral', startRadius: 40, endRadius: 110, clockwise: true },
+            { type: 'spiral', startRadius: 110, endRadius: 40, clockwise: false },
+            { type: 's_curve', amplitude: 70, length: 240 },
+            { type: 'wave', amplitude: 60, wavelength: 180, length: 280 }
         ];
 
-        // 🎹 PİYANO MESAJ SİSTEMİ - ÇOKLU TUŞ DESTEĞİ
+        // 🎹 PİYANO MESAJ SİSTEMİ
         window.addEventListener('message', (event) => {
             if (event.data.type === 'pianoKeyPress') {
                 const key = event.data.key;
@@ -193,6 +212,7 @@
                 const startY = Math.random() * 0.6 * parentHeight + 0.2 * parentHeight;
                 
                 activeFluidCount++;
+                lastClearTime = Date.now(); // Son aktivite zamanını güncelle
                 
                 createFluidFlow(startX, startY, keyColors, pattern);
             }
@@ -219,7 +239,7 @@
             };
         }
 
-        // 🌊 FLUID AKIŞI - BEYAZ FLASH FIX'Lİ
+        // 🌊 FLUID AKIŞI - DAHA KISA VE HIZLI
         function createFluidFlow(startX, startY, colors, pattern) {
             const canvas = document.getElementById('glcanvas');
             if (!canvas) return;
@@ -227,30 +247,33 @@
             const width = parentWidth || window.innerWidth;
             const height = parentHeight || window.innerHeight;
             
-            const TOTAL_FRAMES = 200;
-            const FRAME_DURATION = 18;
+            // 🎯 DAHA KISA FLUID - 120 frame (eski 200)
+            const TOTAL_FRAMES = 120;
+            const FRAME_DURATION = 15; // Biraz daha hızlı
             
             let frameIndex = 0;
             
             const basePath = generateBasePath(startX, startY, pattern, width, height, TOTAL_FRAMES);
             
-            const startFrame = Math.floor(basePath.length * 0.2);
+            const startFrame = Math.floor(basePath.length * 0.15);
             let currentX = basePath[startFrame].x;
             let currentY = basePath[startFrame].y;
             
             console.log(`🎨 Fluid başlıyor: ${colors.length} renk (${activeFluidCount} aktif)`);
             
-            // 🎯 ÇÖZÜM: BEYAZ FLASH - İlk rengi agresif bir şekilde set et
+            // 🎯 BEYAZ FLASH FIX - İlk rengi çok agresif set et
+            setPianoColor(colors[0]);
             setPianoColor(colors[0]);
             setPianoColor(colors[0]);
             setPianoColor(colors[0]);
             
-            // 300ms bekle ki GPU'ya geçsin
+            // 400ms bekle - daha uzun bekleme
             setTimeout(() => {
                 // Tekrar emin ol
                 setPianoColor(colors[0]);
+                setPianoColor(colors[0]);
                 
-                // 50ms daha bekle
+                // 100ms daha bekle
                 setTimeout(() => {
                     // Mousedown
                     canvas.dispatchEvent(new MouseEvent('mousedown', {
@@ -280,6 +303,7 @@
                                 console.log('✅ Fluid tamamlandı');
                                 
                                 activeFluidCount--;
+                                lastClearTime = Date.now();
                                 
                                 return;
                             }
@@ -320,8 +344,8 @@
                             
                         }, FRAME_DURATION);
                     }, 50);
-                }, 50);
-            }, 300);
+                }, 100);
+            }, 400);
         }
 
         function generateBasePath(startX, startY, pattern, width, height, pointCount) {
