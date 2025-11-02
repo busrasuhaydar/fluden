@@ -1,7 +1,192 @@
-// 🎹 PİYANO MESAJ SİSTEMİ - 3 AYRI FLUID (10 RENK)
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Piano Fluid - Living Art</title>
+    <style>
+        * {
+            margin: 0 !important;
+            padding: 0 !important;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            box-sizing: border-box !important;
+        }
+
+        html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: transparent !important;
+            color: #fff;
+            font-family: Helvetica, Arial, sans-serif;
+            position: relative;
+        }
+
+        #glcanvas {
+            display: block !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            outline: 0 !important;
+            transform: none !important;
+            background: transparent !important;
+        }
+
+        div[style*="position: absolute"],
+        div[style*="fixed"],
+        .cables-stats,
+        .stats-panel {
+            display: none !important;
+            visibility: hidden !important;
+        }
+    </style>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
+</head>
+<body>
+    <canvas id="glcanvas" tabindex="1"></canvas>
+    <script type="text/javascript" src="js/patch.js" async></script>
+    <script type="text/javascript">
+
+        function showError(initiator,...args) {}
+
+        let parentWidth = window.innerWidth;
+        let parentHeight = window.innerHeight;
+
+        if (window.parent !== window) {
+            try {
+                parentWidth = window.parent.innerWidth;
+                parentHeight = window.parent.innerHeight;
+            } catch(e) {}
+        }
+
+        // 🎨 JSON RENK PALETİ - BİREBİR KULLANILACAK
+        const PIANO_COLORS = {
+            "c3": [{r: 253, g: 1, b: 0},{r: 251, g: 228, b: 157},{r: 162, g: 219, b: 32},{r: 32, g: 60, b: 72},{r: 126, g: 75, b: 95},{r: 197, g: 117, b: 119},{r: 255, g: 120, b: 1},{r: 185, g: 131, b: 27},{r: 0, g: 28, b: 158},{r: 208, g: 198, b: 34}],
+            "d3": [{r: 215, g: 228, b: 196},{r: 227, g: 114, b: 127},{r: 111, g: 34, b: 70},{r: 54, g: 215, b: 146},{r: 255, g: 155, b: 148},{r: 195, g: 45, b: 108},{r: 255, g: 90, b: 139},{r: 75, g: 29, b: 54},{r: 0, g: 164, b: 158},{r: 220, g: 203, b: 185}],
+            "e3": [{r: 255, g: 88, b: 214},{r: 255, g: 29, b: 199},{r: 255, g: 132, b: 0},{r: 0, g: 106, b: 145},{r: 231, g: 219, b: 211},{r: 0, g: 43, b: 59},{r: 255, g: 151, b: 227},{r: 0, g: 133, b: 141},{r: 255, g: 0, b: 95},{r: 255, g: 148, b: 249}],
+            "f3": [{r: 209, g: 235, b: 235},{r: 4, g: 189, b: 238},{r: 0, g: 106, b: 143},{r: 0, g: 202, b: 0},{r: 5, g: 185, b: 238},{r: 0, g: 111, b: 155},{r: 229, g: 0, b: 103},{r: 182, g: 0, b: 144},{r: 245, g: 36, b: 98},{r: 255, g: 0, b: 142}],
+            "g3": [{r: 71, g: 30, b: 116},{r: 152, g: 98, b: 227},{r: 152, g: 74, b: 237},{r: 99, g: 6, b: 184},{r: 176, g: 0, b: 173},{r: 241, g: 65, b: 126},{r: 159, g: 182, b: 189},{r: 177, g: 247, b: 12},{r: 169, g: 115, b: 240},{r: 163, g: 223, b: 88}],
+            "a3": [{r: 84, g: 80, b: 172},{r: 195, g: 107, b: 187},{r: 233, g: 155, b: 81},{r: 161, g: 120, b: 161},{r: 52, g: 89, b: 148},{r: 53, g: 47, b: 54},{r: 67, g: 61, b: 72},{r: 3, g: 126, b: 141},{r: 86, g: 78, b: 171},{r: 181, g: 87, b: 210}],
+            "b3": [{r: 2, g: 140, b: 167},{r: 46, g: 146, b: 25},{r: 219, g: 254, b: 0},{r: 254, g: 47, b: 196},{r: 0, g: 103, b: 124},{r: 0, g: 81, b: 36},{r: 198, g: 242, b: 155},{r: 232, g: 53, b: 168},{r: 0, g: 26, b: 36},{r: 0, g: 183, b: 0}],
+            "c4": [{r: 255, g: 83, b: 4},{r: 251, g: 113, b: 83},{r: 255, g: 67, b: 2},{r: 179, g: 72, b: 33},{r: 0, g: 74, b: 96},{r: 0, g: 88, b: 97},{r: 121, g: 140, b: 148},{r: 29, g: 100, b: 94},{r: 1, g: 117, b: 120},{r: 252, g: 86, b: 0}],
+            "d4": [{r: 46, g: 189, b: 15},{r: 1, g: 229, b: 2},{r: 85, g: 65, b: 190},{r: 47, g: 61, b: 97},{r: 5, g: 223, b: 3},{r: 3, g: 164, b: 240},{r: 123, g: 23, b: 254},{r: 43, g: 43, b: 73},{r: 2, g: 177, b: 240},{r: 41, g: 41, b: 46}],
+            "e4": [{r: 40, g: 121, b: 193},{r: 255, g: 155, b: 188},{r: 255, g: 207, b: 166},{r: 232, g: 24, b: 140},{r: 204, g: 67, b: 157},{r: 57, g: 78, b: 167},{r: 255, g: 217, b: 162},{r: 254, g: 116, b: 156},{r: 192, g: 44, b: 106},{r: 92, g: 73, b: 163}],
+            "f4": [{r: 235, g: 145, b: 0},{r: 252, g: 74, b: 85},{r: 31, g: 112, b: 159},{r: 87, g: 28, b: 131},{r: 253, g: 102, b: 100},{r: 238, g: 97, b: 26},{r: 250, g: 159, b: 30},{r: 32, g: 123, b: 150},{r: 77, g: 60, b: 154},{r: 254, g: 72, b: 0}],
+            "g4": [{r: 1, g: 203, b: 255},{r: 8, g: 41, b: 172},{r: 16, g: 0, b: 112},{r: 218, g: 9, b: 65},{r: 255, g: 117, b: 254},{r: 2, g: 149, b: 252},{r: 2, g: 226, b: 255},{r: 19, g: 0, b: 164},{r: 236, g: 10, b: 115},{r: 251, g: 64, b: 248}],
+            "a4": [{r: 206, g: 101, b: 119},{r: 255, g: 255, b: 255},{r: 190, g: 172, b: 163},{r: 225, g: 48, b: 86},{r: 87, g: 160, b: 170},{r: 202, g: 173, b: 128},{r: 215, g: 67, b: 111},{r: 246, g: 76, b: 96},{r: 148, g: 148, b: 146},{r: 24, g: 99, b: 120}],
+            "b4": [{r: 223, g: 59, b: 0},{r: 244, g: 66, b: 0},{r: 255, g: 97, b: 0},{r: 203, g: 0, b: 10},{r: 132, g: 2, b: 15},{r: 51, g: 11, b: 12},{r: 255, g: 91, b: 1},{r: 242, g: 0, b: 8},{r: 255, g: 76, b: 0},{r: 214, g: 0, b: 7}],
+            "c5": [{r: 9, g: 106, b: 64},{r: 169, g: 157, b: 41},{r: 22, g: 63, b: 108},{r: 7, g: 182, b: 190},{r: 185, g: 162, b: 78},{r: 0, g: 146, b: 89},{r: 0, g: 67, b: 125},{r: 125, g: 126, b: 32},{r: 221, g: 192, b: 75},{r: 2, g: 145, b: 129}],
+            "d5": [{r: 12, g: 12, b: 12},{r: 255, g: 69, b: 1},{r: 6, g: 41, b: 57},{r: 38, g: 123, b: 192},{r: 233, g: 117, b: 25},{r: 237, g: 0, b: 17},{r: 221, g: 116, b: 0},{r: 28, g: 28, b: 28},{r: 195, g: 131, b: 155},{r: 255, g: 55, b: 1}]
+        };
+
+        // 🧹 CANVAS TEMİZLİK SİSTEMİ
+        let cleanupTimer = null;
+        let isFluidActive = false;
+
+        function resetCleanupTimer() {
+            // Önceki timer'ı iptal et
+            if (cleanupTimer) {
+                clearTimeout(cleanupTimer);
+            }
+            
+            // 10 saniye sonra canvas'ı temizle (eğer fluid aktif değilse)
+            cleanupTimer = setTimeout(() => {
+                if (!isFluidActive && typeof CABLES !== 'undefined' && CABLES.patch) {
+                    console.log('🧹 10 saniye doldu, canvas temizleniyor...');
+                    try {
+                        // Canvas'ı resetle
+                        CABLES.patch.setVariable('ResetCanvas', true);
+                        setTimeout(() => {
+                            CABLES.patch.setVariable('ResetCanvas', false);
+                        }, 100);
+                    } catch(e) {
+                        console.log('Canvas reset denemesi:', e);
+                    }
+                }
+            }, 10000); // 10 saniye
+        }
+
+        function forceFullScreenCanvas() {
+            const canvas = document.getElementById('glcanvas');
+            if (!canvas) return;
+            
+            const width = parentWidth || window.innerWidth || document.documentElement.clientWidth;
+            const height = parentHeight || window.innerHeight || document.documentElement.clientHeight;
+            
+            canvas.width = width;
+            canvas.height = height;
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+            canvas.style.position = 'absolute';
+            canvas.style.top = '0';
+            canvas.style.left = '0';
+        }
+
+        function patchInitialized(patch) {
+            console.log('✅ Fluid hazır!');
+            hideStatsPanels();
+            forceFullScreenCanvas();
+            
+            setTimeout(forceFullScreenCanvas, 100);
+            setTimeout(forceFullScreenCanvas, 500);
+            setTimeout(forceFullScreenCanvas, 1000);
+            setTimeout(forceFullScreenCanvas, 2000);
+            
+            // İlk cleanup timer'ı başlat
+            resetCleanupTimer();
+        }
+
+        function patchFinishedLoading(patch) {
+            console.log('🎨 Yükleme tamamlandı!');
+            hideStatsPanels();
+            forceFullScreenCanvas();
+        }
+
+        function hideStatsPanels() {
+            setTimeout(() => {
+                const statsDivs = document.querySelectorAll('div');
+                statsDivs.forEach(div => {
+                    const style = div.getAttribute('style');
+                    if (style && (style.includes('position: absolute') || style.includes('position: fixed'))) {
+                        div.style.display = 'none';
+                        div.style.visibility = 'hidden';
+                    }
+                });
+            }, 100);
+        }
+
+        // 🌊 HAREKET PATTERNLERİ
+        const FLOW_PATTERNS = [
+            { type: 'circle', radius: 160, clockwise: true },
+            { type: 'circle', radius: 160, clockwise: false },
+            { type: 'circle', radius: 130, clockwise: true },
+            { type: 'spiral', startRadius: 50, endRadius: 150, clockwise: true },
+            { type: 'spiral', startRadius: 150, endRadius: 50, clockwise: false },
+            { type: 's_curve', amplitude: 90, length: 320 },
+            { type: 'wave', amplitude: 80, wavelength: 220, length: 360 }
+        ];
+
+        // 🎹 PİYANO MESAJ SİSTEMİ - 3 AYRI FLUID (10 RENK)
         window.addEventListener('message', (event) => {
             if (event.data.type === 'pianoKeyPress') {
                 const key = event.data.key;
+                
+                // Timer'ı sıfırla - tuş basıldı, 10 saniye yeniden başlasın
+                resetCleanupTimer();
                 
                 // JSON'dan o tuşun 10 rengini AYNEN al
                 const keyColors = PIANO_COLORS[key];
@@ -49,3 +234,255 @@
                 }, 300);
             }
         });
+
+        // Rengi CABLES sistemine gönder - AYNEN
+        function setPianoColor(color) {
+            if (typeof CABLES === 'undefined' || !CABLES.patch) return;
+            
+            try {
+                // Rengi 0-1 arasına normalize et - DEĞİŞTİRMEDEN
+                const normalizedColor = [
+                    color.r / 255,
+                    color.g / 255,
+                    color.b / 255
+                ];
+                CABLES.patch.setVariable('SplatColor', normalizedColor);
+            } catch(e) {}
+        }
+
+        // 🎨 İKİ RENGİ KARIŞTIR - AYNEN
+        function blendColors(color1, color2, ratio) {
+            return {
+                r: Math.round(color1.r * (1 - ratio) + color2.r * ratio),
+                g: Math.round(color1.g * (1 - ratio) + color2.g * ratio),
+                b: Math.round(color1.b * (1 - ratio) + color2.b * ratio)
+            };
+        }
+
+        // 🌊 FLUID AKIŞI - 10 RENK İLE
+        function createFluidFlow(startX, startY, colors, pattern) {
+            const canvas = document.getElementById('glcanvas');
+            if (!canvas) return;
+            
+            const width = parentWidth || window.innerWidth;
+            const height = parentHeight || window.innerHeight;
+            
+            // Fluid başladı - cleanup'ı engelle
+            isFluidActive = true;
+            
+            // TOPLAM 240 FRAME - 4.8 SANİYE (DAHA UZUN, DAHA GÜÇLÜ)
+            const TOTAL_FRAMES = 240;
+            const FRAME_DURATION = 20;
+            
+            let frameIndex = 0;
+            
+            // Hareket yolunu oluştur (circle, spiral, wave vb.)
+            const basePath = generateBasePath(startX, startY, pattern, width, height, TOTAL_FRAMES);
+            
+            // İlk rengi set et
+            setPianoColor(colors[0]);
+            
+            // Path'in %10'undan başla (daha erken başlangıç)
+            const startFrame = Math.floor(basePath.length * 0.1);
+            let currentX = basePath[startFrame].x;
+            let currentY = basePath[startFrame].y;
+            
+            console.log(`🎨 Fluid başlıyor: ${colors.length} renk, ${TOTAL_FRAMES} frame`);
+            
+            // 🖱️ MOUSE HAREKETLER BAŞLIYOR:
+            
+            // 1️⃣ MOUSEDOWN - Fluid başlıyor, mouse basılı tutuluyor
+            canvas.dispatchEvent(new MouseEvent('mousedown', {
+                clientX: currentX,
+                clientY: currentY,
+                button: 0,      // Sol tık
+                buttons: 1,     // Mouse basılı
+                bubbles: true   // Event yukarı taşısın
+            }));
+            
+            // 20ms bekle, hemen başla (daha hızlı tepki)
+            setTimeout(() => {
+                const animationInterval = setInterval(() => {
+                    frameIndex++;
+                    
+                    // Animasyon bitti mi?
+                    if (frameIndex >= TOTAL_FRAMES - startFrame) {
+                        clearInterval(animationInterval);
+                        
+                        // 3️⃣ MOUSEUP - Fluid bitti, mouse bırakıldı
+                        canvas.dispatchEvent(new MouseEvent('mouseup', {
+                            clientX: currentX,
+                            clientY: currentY,
+                            button: 0,      // Sol tık
+                            buttons: 0,     // Mouse artık basılı değil
+                            bubbles: true
+                        }));
+                        
+                        console.log('✅ Fluid tamamlandı');
+                        
+                        // Fluid bitti - cleanup timer'ı yeniden başlat
+                        isFluidActive = false;
+                        resetCleanupTimer();
+                        
+                        return;
+                    }
+                    
+                    const actualFrame = frameIndex + startFrame;
+                    
+                    // 🎨 10 RENK ARASI GEÇİŞ - SMOOTH
+                    const progress = frameIndex / (TOTAL_FRAMES - startFrame);
+                    const colorProgress = progress * (colors.length - 1);
+                    const colorIndex = Math.floor(colorProgress);
+                    const colorBlend = colorProgress - colorIndex;
+                    
+                    // Şu anki ve sonraki rengi karıştır
+                    if (colorIndex < colors.length - 1) {
+                        const blendedColor = blendColors(
+                            colors[colorIndex], 
+                            colors[colorIndex + 1], 
+                            colorBlend
+                        );
+                        setPianoColor(blendedColor);
+                    } else {
+                        // Son renk
+                        setPianoColor(colors[colors.length - 1]);
+                    }
+                    
+                    // Yeni pozisyona git
+                    if (actualFrame < basePath.length) {
+                        currentX = basePath[actualFrame].x;
+                        currentY = basePath[actualFrame].y;
+                        
+                        // Ekran dışına çıkmasın
+                        currentX = Math.max(20, Math.min(width - 20, currentX));
+                        currentY = Math.max(20, Math.min(height - 20, currentY));
+                        
+                        // 2️⃣ MOUSEMOVE - Mouse hareket ediyor (BASILI TUTARAK)
+                        canvas.dispatchEvent(new MouseEvent('mousemove', {
+                            clientX: currentX,
+                            clientY: currentY,
+                            button: 0,      // Sol tık
+                            buttons: 1,     // Mouse HALA basılı
+                            bubbles: true
+                        }));
+                    }
+                    
+                }, FRAME_DURATION);
+            }, 20);
+        }
+
+        // 🎨 HAREKET YOLUNU OLUŞTUR
+        function generateBasePath(startX, startY, pattern, width, height, pointCount) {
+            const points = [];
+            
+            // Rastgele noise offset'leri
+            const noiseOffsetX = Math.random() * 1000;
+            const noiseOffsetY = Math.random() * 1000;
+            
+            for (let i = 0; i < pointCount; i++) {
+                const t = i / pointCount; // 0'dan 1'e
+                let x, y;
+                
+                // Doğal titreşim ekle
+                const noiseScale = 0.025;
+                const noiseX = (Math.sin(i * noiseScale + noiseOffsetX) + 
+                               Math.sin(i * noiseScale * 2.3 + noiseOffsetX * 1.4)) * 10;
+                const noiseY = (Math.cos(i * noiseScale + noiseOffsetY) + 
+                               Math.cos(i * noiseScale * 1.9 + noiseOffsetY * 1.7)) * 10;
+                
+                // Pattern'e göre hareket yolu
+                switch(pattern.type) {
+                    case 'circle':
+                        // Daire çiz
+                        const angleCircle = t * Math.PI * 2 * (pattern.clockwise ? 1 : -1);
+                        const breathe = 1 + Math.sin(t * Math.PI * 2.5) * 0.1;
+                        x = startX + Math.cos(angleCircle) * pattern.radius * breathe + noiseX;
+                        y = startY + Math.sin(angleCircle) * pattern.radius * breathe + noiseY;
+                        break;
+                        
+                    case 'spiral':
+                        // Spiral çiz
+                        const angleSpiral = t * Math.PI * 4 * (pattern.clockwise ? 1 : -1);
+                        const radiusSpiral = pattern.startRadius + 
+                                            (pattern.endRadius - pattern.startRadius) * t;
+                        x = startX + Math.cos(angleSpiral) * radiusSpiral + noiseX;
+                        y = startY + Math.sin(angleSpiral) * radiusSpiral + noiseY;
+                        break;
+                        
+                    case 's_curve':
+                        // S eğrisi çiz
+                        x = startX + (t - 0.5) * pattern.length + noiseX;
+                        y = startY + Math.sin(t * Math.PI * 2) * pattern.amplitude + noiseY;
+                        break;
+                        
+                    case 'wave':
+                        // Dalga hareketi
+                        const waveProgress = t * pattern.length;
+                        x = startX + waveProgress * Math.cos(Math.PI / 6) + noiseX;
+                        y = startY + waveProgress * Math.sin(Math.PI / 6) + 
+                            Math.sin(waveProgress / pattern.wavelength * Math.PI * 2) * pattern.amplitude + noiseY;
+                        break;
+                        
+                    default:
+                        x = startX + t * 100;
+                        y = startY + t * 100;
+                }
+                
+                points.push({ x, y });
+            }
+            
+            return points;
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            forceFullScreenCanvas();
+        });
+
+        document.addEventListener("CABLES.jsLoaded", function (event) {
+            forceFullScreenCanvas();
+            
+            CABLES.patch = new CABLES.Patch({
+                patch: CABLES.exportedPatch,
+                "prefixAssetPath": "",
+                "assetPath": "assets/",
+                "jsPath": "js/",
+                "glCanvasId": "glcanvas",
+                "glCanvasResizeToWindow": true,
+                "onError": showError,
+                "onPatchLoaded": patchInitialized,
+                "onFinishedLoading": patchFinishedLoading,
+                "canvas": {"alpha":true, "premultipliedAlpha":true }
+            });
+            
+            hideStatsPanels();
+            setTimeout(forceFullScreenCanvas, 50);
+        });
+
+        document.getElementById('glcanvas').addEventListener('touchmove', (e)=>{ e.preventDefault(); }, false);
+        
+        setInterval(hideStatsPanels, 1000);
+        setInterval(forceFullScreenCanvas, 2000);
+        
+        window.addEventListener('resize', () => {
+            try {
+                if (window.parent !== window) {
+                    parentWidth = window.parent.innerWidth;
+                    parentHeight = window.parent.innerHeight;
+                }
+            } catch(e) {
+                parentWidth = window.innerWidth;
+                parentHeight = window.innerHeight;
+            }
+            forceFullScreenCanvas();
+        });
+
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'parentResize') {
+                parentWidth = event.data.width;
+                parentHeight = event.data.height;
+                forceFullScreenCanvas();
+            }
+        });
+    </script>
+</body>
+</html>
