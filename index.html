@@ -25,7 +25,7 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
-            background-color: #000000 !important;
+            background-color: transparent !important;
             color: #fff;
             font-family: Helvetica, Arial, sans-serif;
             position: relative;
@@ -42,7 +42,7 @@
             height: 100% !important;
             outline: 0 !important;
             transform: none !important;
-            background: #000000 !important;
+            background: transparent !important;
         }
 
         div[style*="position: absolute"],
@@ -93,10 +93,9 @@
             "d5": [{r: 12, g: 12, b: 12},{r: 255, g: 69, b: 1},{r: 6, g: 41, b: 57},{r: 38, g: 123, b: 192},{r: 233, g: 117, b: 25},{r: 237, g: 0, b: 17},{r: 221, g: 116, b: 0},{r: 28, g: 28, b: 28},{r: 195, g: 131, b: 155},{r: 255, g: 55, b: 1}]
         };
 
-        // 🧹 CANVAS TEMİZLİK SİSTEMİ
+        // 🧹 CANVAS TEMİZLİK SİSTEMİ - BASİT VERSİYON
         let activeFluidCount = 0;
         let cleanupTimer = null;
-        let currentSplatColor = [1, 1, 1]; // Başlangıç beyaz
 
         function forceFullScreenCanvas() {
             const canvas = document.getElementById('glcanvas');
@@ -114,82 +113,8 @@
             canvas.style.left = '0';
         }
 
-        // 🎯 GERÇEK ÇÖZÜM: CABLES patch'e direkt müdahale
-        function setSplatColorInPatch(color) {
-            if (typeof CABLES === 'undefined' || !CABLES.patch) return false;
-            
-            try {
-                currentSplatColor = [color.r / 255, color.g / 255, color.b / 255];
-                
-                // ops[13] = SplatOp - bu splat rengini kontrol ediyor
-                const splatOp = CABLES.patch.ops[13];
-                if (splatOp && splatOp.portsIn) {
-                    // "color" portunu bul ve set et
-                    for (let port of splatOp.portsIn) {
-                        if (port.name === 'color' || port.name === 'Color') {
-                            port.set(currentSplatColor);
-                            console.log('✅ Renk patch içinde değiştirildi:', currentSplatColor);
-                            return true;
-                        }
-                    }
-                }
-                
-                // Alternatif: uniforms üzerinden
-                if (splatOp && splatOp._uniforms && splatOp._uniforms.u_color) {
-                    splatOp._uniforms.u_color.setValue(currentSplatColor);
-                    console.log('✅ Renk uniform üzerinden değiştirildi');
-                    return true;
-                }
-            } catch(e) {
-                console.warn('Renk değiştirme hatası:', e);
-            }
-            return false;
-        }
-
-        // 🧹 Canvas'ı gerçekten temizle
-        function clearFluidCanvas() {
-            if (typeof CABLES === 'undefined' || !CABLES.patch) return;
-            
-            try {
-                console.log('🧹 Canvas temizleniyor...');
-                
-                // Fluid simulation texture'larını temizle
-                const canvas = document.getElementById('glcanvas');
-                const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
-                
-                if (gl) {
-                    // Tüm framebuffer'ları temizle
-                    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-                    gl.clearColor(0, 0, 0, 1);
-                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                    
-                    // Patch'i yumuşak reset
-                    if (CABLES.patch.resume) {
-                        CABLES.patch.pause();
-                        setTimeout(() => CABLES.patch.resume(), 50);
-                    }
-                }
-            } catch(e) {
-                console.warn('Canvas temizleme hatası:', e);
-            }
-        }
-
-        function scheduleCleanup() {
-            if (cleanupTimer) {
-                clearTimeout(cleanupTimer);
-            }
-            
-            cleanupTimer = setTimeout(() => {
-                if (activeFluidCount === 0) {
-                    console.log('🧹 Temizlik başlıyor...');
-                    clearFluidCanvas();
-                }
-            }, 3000);
-        }
-
         function patchInitialized(patch) {
             console.log('✅ Fluid hazır!');
-            console.log('📦 Patch ops:', patch.ops);
             hideStatsPanels();
             forceFullScreenCanvas();
             
@@ -250,7 +175,7 @@
             }
         });
 
-        // 🎨 HSL Color Blending (daha temiz karışım)
+        // 🎨 HSL Color Blending
         function rgbToHsl(r, g, b) {
             r /= 255; g /= 255; b /= 255;
             const max = Math.max(r, g, b), min = Math.min(r, g, b);
@@ -312,7 +237,35 @@
             return hslToRgb(h, s, l);
         }
 
-        // 🌊 FLUID AKIŞI - TAM ÇALIŞAN VERSİYON
+        // Renk set fonksiyonu - mouse event'e custom property ekle
+        let nextSplatColor = null;
+
+        function setNextSplatColor(color) {
+            nextSplatColor = {
+                r: color.r / 255,
+                g: color.g / 255,
+                b: color.b / 255
+            };
+        }
+
+        // Mouse event'leri intercept et
+        const originalAddEventListener = HTMLCanvasElement.prototype.addEventListener;
+        HTMLCanvasElement.prototype.addEventListener = function(type, listener, options) {
+            if (type === 'mousedown' || type === 'mousemove') {
+                const wrappedListener = function(e) {
+                    // Eğer bir sonraki renk set edildiyse, event'e ekle
+                    if (nextSplatColor && type === 'mousedown') {
+                        e.splatColor = nextSplatColor;
+                        console.log('🎨 Renk event\'e eklendi:', nextSplatColor);
+                    }
+                    return listener.call(this, e);
+                };
+                return originalAddEventListener.call(this, type, wrappedListener, options);
+            }
+            return originalAddEventListener.call(this, type, listener, options);
+        };
+
+        // 🌊 FLUID AKIŞI - BASİT AMA ÇALIŞAN
         function createFluidFlow(startX, startY, colors, pattern) {
             const canvas = document.getElementById('glcanvas');
             if (!canvas) return;
@@ -331,106 +284,71 @@
             
             console.log(`🎨 Fluid başlıyor: ${colors.length} renk`);
             
-            // 1️⃣ RENK HAZIRLIĞI - Beyaz flash'ı önle
-            const firstColor = colors[0];
-            let colorSetSuccess = setSplatColorInPatch(firstColor);
+            // İlk rengi set et
+            setNextSplatColor(colors[0]);
             
-            // Renk set edilemezse 5 kez daha dene
-            let retryCount = 0;
-            const retryColorSet = setInterval(() => {
-                if (colorSetSuccess || retryCount >= 5) {
-                    clearInterval(retryColorSet);
-                    startFluidAnimation();
-                } else {
-                    colorSetSuccess = setSplatColorInPatch(firstColor);
-                    retryCount++;
-                }
-            }, 100);
+            // Mousedown
+            canvas.dispatchEvent(new MouseEvent('mousedown', {
+                clientX: currentX,
+                clientY: currentY,
+                button: 0,
+                buttons: 1,
+                bubbles: true
+            }));
             
-            function startFluidAnimation() {
-                // 2️⃣ İLK DOKUNUŞ - Phantom move
-                canvas.dispatchEvent(new MouseEvent('mousemove', {
-                    clientX: currentX,
-                    clientY: currentY,
-                    button: 0,
-                    buttons: 0,
-                    bubbles: true
-                }));
+            // Animasyon
+            const animationInterval = setInterval(() => {
+                frameIndex++;
                 
-                // 3️⃣ 150ms bekle, sonra mousedown
-                setTimeout(() => {
-                    setSplatColorInPatch(firstColor);
+                if (frameIndex >= TOTAL_FRAMES - startFrame) {
+                    clearInterval(animationInterval);
                     
-                    canvas.dispatchEvent(new MouseEvent('mousedown', {
+                    canvas.dispatchEvent(new MouseEvent('mouseup', {
+                        clientX: currentX,
+                        clientY: currentY,
+                        button: 0,
+                        buttons: 0,
+                        bubbles: true
+                    }));
+                    
+                    console.log('✅ Fluid tamamlandı');
+                    activeFluidCount--;
+                    
+                    return;
+                }
+                
+                const actualFrame = frameIndex + startFrame;
+                const progress = frameIndex / (TOTAL_FRAMES - startFrame);
+                const colorProgress = progress * (colors.length - 1);
+                const colorIndex = Math.floor(colorProgress);
+                const colorBlend = colorProgress - colorIndex;
+                
+                // Renk geçişi
+                if (colorIndex < colors.length - 1) {
+                    const blendedColor = blendColors(
+                        colors[colorIndex], 
+                        colors[colorIndex + 1], 
+                        colorBlend
+                    );
+                    setNextSplatColor(blendedColor);
+                }
+                
+                // Hareket
+                if (actualFrame < basePath.length) {
+                    currentX = basePath[actualFrame].x;
+                    currentY = basePath[actualFrame].y;
+                    currentX = Math.max(20, Math.min(width - 20, currentX));
+                    currentY = Math.max(20, Math.min(height - 20, currentY));
+                    
+                    canvas.dispatchEvent(new MouseEvent('mousemove', {
                         clientX: currentX,
                         clientY: currentY,
                         button: 0,
                         buttons: 1,
                         bubbles: true
                     }));
-                    
-                    // 4️⃣ ANİMASYON BAŞLAT
-                    setTimeout(() => {
-                        const animationInterval = setInterval(() => {
-                            frameIndex++;
-                            
-                            if (frameIndex >= TOTAL_FRAMES - startFrame) {
-                                clearInterval(animationInterval);
-                                
-                                canvas.dispatchEvent(new MouseEvent('mouseup', {
-                                    clientX: currentX,
-                                    clientY: currentY,
-                                    button: 0,
-                                    buttons: 0,
-                                    bubbles: true
-                                }));
-                                
-                                console.log('✅ Fluid tamamlandı');
-                                activeFluidCount--;
-                                
-                                if (activeFluidCount === 0) {
-                                    scheduleCleanup();
-                                }
-                                return;
-                            }
-                            
-                            const actualFrame = frameIndex + startFrame;
-                            const progress = frameIndex / (TOTAL_FRAMES - startFrame);
-                            const colorProgress = progress * (colors.length - 1);
-                            const colorIndex = Math.floor(colorProgress);
-                            const colorBlend = colorProgress - colorIndex;
-                            
-                            // Renk geçişi (HSL blend)
-                            if (colorIndex < colors.length - 1) {
-                                const blendedColor = blendColors(
-                                    colors[colorIndex], 
-                                    colors[colorIndex + 1], 
-                                    colorBlend
-                                );
-                                setSplatColorInPatch(blendedColor);
-                            } else {
-                                setSplatColorInPatch(colors[colors.length - 1]);
-                            }
-                            
-                            // Hareket
-                            if (actualFrame < basePath.length) {
-                                currentX = basePath[actualFrame].x;
-                                currentY = basePath[actualFrame].y;
-                                currentX = Math.max(20, Math.min(width - 20, currentX));
-                                currentY = Math.max(20, Math.min(height - 20, currentY));
-                                
-                                canvas.dispatchEvent(new MouseEvent('mousemove', {
-                                    clientX: currentX,
-                                    clientY: currentY,
-                                    button: 0,
-                                    buttons: 1,
-                                    bubbles: true
-                                }));
-                            }
-                        }, FRAME_DURATION);
-                    }, 50);
-                }, 150);
-            }
+                }
+            }, FRAME_DURATION);
         }
 
         function generateBasePath(startX, startY, pattern, width, height, pointCount) {
