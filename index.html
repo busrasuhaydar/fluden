@@ -98,26 +98,21 @@
         let isFluidActive = false;
 
         function resetCleanupTimer() {
-            // Önceki timer'ı iptal et
             if (cleanupTimer) {
                 clearTimeout(cleanupTimer);
             }
             
-            // 10 saniye sonra canvas'ı temizle (eğer fluid aktif değilse)
             cleanupTimer = setTimeout(() => {
                 if (!isFluidActive && typeof CABLES !== 'undefined' && CABLES.patch) {
-                    console.log('🧹 10 saniye doldu, canvas temizleniyor...');
+                    console.log('🧹 Canvas temizleniyor...');
                     try {
-                        // Canvas'ı resetle
                         CABLES.patch.setVariable('ResetCanvas', true);
                         setTimeout(() => {
                             CABLES.patch.setVariable('ResetCanvas', false);
                         }, 100);
-                    } catch(e) {
-                        console.log('Canvas reset denemesi:', e);
-                    }
+                    } catch(e) {}
                 }
-            }, 10000); // 10 saniye
+            }, 10000);
         }
 
         function forceFullScreenCanvas() {
@@ -146,7 +141,6 @@
             setTimeout(forceFullScreenCanvas, 1000);
             setTimeout(forceFullScreenCanvas, 2000);
             
-            // İlk cleanup timer'ı başlat
             resetCleanupTimer();
         }
 
@@ -169,26 +163,24 @@
             }, 100);
         }
 
-        // 🌊 HAREKET PATTERNLERİ - BÜYÜK VE PARLAK
+        // 🌊 HAREKET PATTERNLERİ - ORJİNAL
         const FLOW_PATTERNS = [
-            { type: 'circle', radius: 280, clockwise: true },
-            { type: 'circle', radius: 280, clockwise: false },
-            { type: 'circle', radius: 250, clockwise: true },
-            { type: 'spiral', startRadius: 100, endRadius: 300, clockwise: true },
-            { type: 'spiral', startRadius: 300, endRadius: 100, clockwise: false },
-            { type: 's_curve', amplitude: 150, length: 500 },
-            { type: 'wave', amplitude: 140, wavelength: 300, length: 550 }
+            { type: 'circle', radius: 160, clockwise: true },
+            { type: 'circle', radius: 160, clockwise: false },
+            { type: 'circle', radius: 130, clockwise: true },
+            { type: 'spiral', startRadius: 50, endRadius: 150, clockwise: true },
+            { type: 'spiral', startRadius: 150, endRadius: 50, clockwise: false },
+            { type: 's_curve', amplitude: 90, length: 320 },
+            { type: 'wave', amplitude: 80, wavelength: 220, length: 360 }
         ];
 
-        // 🎹 PİYANO MESAJ SİSTEMİ - 3 AYRI FLUID (10 RENK)
+        // 🎹 PİYANO MESAJ SİSTEMİ - ORJİNAL (TEK BÜYÜK FLUİD)
         window.addEventListener('message', (event) => {
             if (event.data.type === 'pianoKeyPress') {
                 const key = event.data.key;
                 
-                // Timer'ı sıfırla - tuş basıldı, 10 saniye yeniden başlasın
                 resetCleanupTimer();
                 
-                // JSON'dan o tuşun 10 rengini AYNEN al
                 const keyColors = PIANO_COLORS[key];
                 
                 if (!keyColors || keyColors.length === 0) {
@@ -196,56 +188,21 @@
                     return;
                 }
                 
-                console.log(`🎹 ${key.toUpperCase()} → 3 FLUID (10 renk toplam)`);
+                console.log(`🎹 ${key.toUpperCase()} → ${keyColors.length} renk (ORJİNAL)`);
                 
-                // 🎯 RASTGELE BAŞLANGIÇ NOKTASI
-                const centerX = Math.random() * 0.5 * parentWidth + 0.25 * parentWidth;
-                const centerY = Math.random() * 0.5 * parentHeight + 0.25 * parentHeight;
+                const pattern = FLOW_PATTERNS[Math.floor(Math.random() * FLOW_PATTERNS.length)];
                 
-                // 3 AYRI FLUID OLUŞTUR - HER BİRİ BÜYÜK VE GÜÇLÜ
+                const startX = Math.random() * 0.6 * parentWidth + 0.2 * parentWidth;
+                const startY = Math.random() * 0.6 * parentHeight + 0.2 * parentHeight;
                 
-                // FLUID 1: Renk 0-3 (4 renk) - DEV DAİRE
-                setTimeout(() => {
-                    const pattern1 = { type: 'circle', radius: 300, clockwise: Math.random() > 0.5 };
-                    const offset1X = (Math.random() - 0.5) * 150;
-                    const offset1Y = (Math.random() - 0.5) * 150;
-                    createFluidFlow(centerX + offset1X, centerY + offset1Y, keyColors.slice(0, 4), pattern1);
-                }, 0);
-                
-                // FLUID 2: Renk 4-7 (4 renk) - BÜYÜK SPİRAL
-                setTimeout(() => {
-                    const pattern2 = { 
-                        type: 'spiral', 
-                        startRadius: 120, 
-                        endRadius: 320, 
-                        clockwise: Math.random() > 0.5 
-                    };
-                    const offset2X = (Math.random() - 0.5) * 180;
-                    const offset2Y = (Math.random() - 0.5) * 180;
-                    createFluidFlow(centerX + offset2X, centerY + offset2Y, keyColors.slice(4, 8), pattern2);
-                }, 200);
-                
-                // FLUID 3: Renk 8-9 (2 renk) - BÜYÜK WAVE
-                setTimeout(() => {
-                    const pattern3 = { 
-                        type: 'wave', 
-                        amplitude: 140, 
-                        wavelength: 280, 
-                        length: 500 
-                    };
-                    const offset3X = (Math.random() - 0.5) * 160;
-                    const offset3Y = (Math.random() - 0.5) * 160;
-                    createFluidFlow(centerX + offset3X, centerY + offset3Y, keyColors.slice(8, 10), pattern3);
-                }, 400);
+                createFluidFlow(startX, startY, keyColors, pattern);
             }
         });
 
-        // Rengi CABLES sistemine gönder - AYNEN
         function setPianoColor(color) {
             if (typeof CABLES === 'undefined' || !CABLES.patch) return;
             
             try {
-                // Rengi 0-1 arasına normalize et - DEĞİŞTİRMEDEN
                 const normalizedColor = [
                     color.r / 255,
                     color.g / 255,
@@ -255,7 +212,6 @@
             } catch(e) {}
         }
 
-        // 🎨 İKİ RENGİ KARIŞTIR - AYNEN
         function blendColors(color1, color2, ratio) {
             return {
                 r: Math.round(color1.r * (1 - ratio) + color2.r * ratio),
@@ -264,7 +220,7 @@
             };
         }
 
-        // 🌊 FLUID AKIŞI - 10 RENK İLE
+        // 🌊 FLUID AKIŞI - ORJİNAL
         function createFluidFlow(startX, startY, colors, pattern) {
             const canvas = document.getElementById('glcanvas');
             if (!canvas) return;
@@ -272,60 +228,48 @@
             const width = parentWidth || window.innerWidth;
             const height = parentHeight || window.innerHeight;
             
-            // Fluid başladı - cleanup'ı engelle
             isFluidActive = true;
             
-            // TOPLAM 280 FRAME - 5.6 SANİYE (UZUN VE ETKİLEYİCİ)
-            const TOTAL_FRAMES = 280;
-            const FRAME_DURATION = 20;
+            const TOTAL_FRAMES = 200;
+            const FRAME_DURATION = 18;
             
             let frameIndex = 0;
             
-            // Hareket yolunu oluştur (circle, spiral, wave vb.)
             const basePath = generateBasePath(startX, startY, pattern, width, height, TOTAL_FRAMES);
             
-            // İlk rengi set et
             setPianoColor(colors[0]);
             
-            // Path'in %5'inden başla (hemen tam güçle başla)
-            const startFrame = Math.floor(basePath.length * 0.05);
+            const startFrame = Math.floor(basePath.length * 0.2);
             let currentX = basePath[startFrame].x;
             let currentY = basePath[startFrame].y;
             
-            console.log(`🎨 Fluid başlıyor: ${colors.length} renk, ${TOTAL_FRAMES} frame`);
+            console.log(`🎨 Fluid başlıyor: ${colors.length} renk`);
             
-            // 🖱️ MOUSE HAREKETLER BAŞLIYOR:
-            
-            // 1️⃣ MOUSEDOWN - Fluid başlıyor, mouse basılı tutuluyor
             canvas.dispatchEvent(new MouseEvent('mousedown', {
                 clientX: currentX,
                 clientY: currentY,
-                button: 0,      // Sol tık
-                buttons: 1,     // Mouse basılı
-                bubbles: true   // Event yukarı taşısın
+                button: 0,
+                buttons: 1,
+                bubbles: true
             }));
             
-            // 20ms bekle, hemen başla (daha hızlı tepki)
             setTimeout(() => {
                 const animationInterval = setInterval(() => {
                     frameIndex++;
                     
-                    // Animasyon bitti mi?
                     if (frameIndex >= TOTAL_FRAMES - startFrame) {
                         clearInterval(animationInterval);
                         
-                        // 3️⃣ MOUSEUP - Fluid bitti, mouse bırakıldı
                         canvas.dispatchEvent(new MouseEvent('mouseup', {
                             clientX: currentX,
                             clientY: currentY,
-                            button: 0,      // Sol tık
-                            buttons: 0,     // Mouse artık basılı değil
+                            button: 0,
+                            buttons: 0,
                             bubbles: true
                         }));
                         
                         console.log('✅ Fluid tamamlandı');
                         
-                        // Fluid bitti - cleanup timer'ı yeniden başlat
                         isFluidActive = false;
                         resetCleanupTimer();
                         
@@ -334,13 +278,11 @@
                     
                     const actualFrame = frameIndex + startFrame;
                     
-                    // 🎨 10 RENK ARASI GEÇİŞ - SMOOTH
                     const progress = frameIndex / (TOTAL_FRAMES - startFrame);
                     const colorProgress = progress * (colors.length - 1);
                     const colorIndex = Math.floor(colorProgress);
                     const colorBlend = colorProgress - colorIndex;
                     
-                    // Şu anki ve sonraki rengi karıştır
                     if (colorIndex < colors.length - 1) {
                         const blendedColor = blendColors(
                             colors[colorIndex], 
@@ -349,56 +291,47 @@
                         );
                         setPianoColor(blendedColor);
                     } else {
-                        // Son renk
                         setPianoColor(colors[colors.length - 1]);
                     }
                     
-                    // Yeni pozisyona git
                     if (actualFrame < basePath.length) {
                         currentX = basePath[actualFrame].x;
                         currentY = basePath[actualFrame].y;
                         
-                        // Ekran dışına çıkmasın
                         currentX = Math.max(20, Math.min(width - 20, currentX));
                         currentY = Math.max(20, Math.min(height - 20, currentY));
                         
-                        // 2️⃣ MOUSEMOVE - Mouse hareket ediyor (BASILI TUTARAK)
                         canvas.dispatchEvent(new MouseEvent('mousemove', {
                             clientX: currentX,
                             clientY: currentY,
-                            button: 0,      // Sol tık
-                            buttons: 1,     // Mouse HALA basılı
+                            button: 0,
+                            buttons: 1,
                             bubbles: true
                         }));
                     }
                     
                 }, FRAME_DURATION);
-            }, 20);
+            }, 40);
         }
 
-        // 🎨 HAREKET YOLUNU OLUŞTUR
         function generateBasePath(startX, startY, pattern, width, height, pointCount) {
             const points = [];
             
-            // Rastgele noise offset'leri
             const noiseOffsetX = Math.random() * 1000;
             const noiseOffsetY = Math.random() * 1000;
             
             for (let i = 0; i < pointCount; i++) {
-                const t = i / pointCount; // 0'dan 1'e
+                const t = i / pointCount;
                 let x, y;
                 
-                // Doğal titreşim ekle
                 const noiseScale = 0.025;
                 const noiseX = (Math.sin(i * noiseScale + noiseOffsetX) + 
                                Math.sin(i * noiseScale * 2.3 + noiseOffsetX * 1.4)) * 10;
                 const noiseY = (Math.cos(i * noiseScale + noiseOffsetY) + 
                                Math.cos(i * noiseScale * 1.9 + noiseOffsetY * 1.7)) * 10;
                 
-                // Pattern'e göre hareket yolu
                 switch(pattern.type) {
                     case 'circle':
-                        // Daire çiz
                         const angleCircle = t * Math.PI * 2 * (pattern.clockwise ? 1 : -1);
                         const breathe = 1 + Math.sin(t * Math.PI * 2.5) * 0.1;
                         x = startX + Math.cos(angleCircle) * pattern.radius * breathe + noiseX;
@@ -406,7 +339,6 @@
                         break;
                         
                     case 'spiral':
-                        // Spiral çiz
                         const angleSpiral = t * Math.PI * 4 * (pattern.clockwise ? 1 : -1);
                         const radiusSpiral = pattern.startRadius + 
                                             (pattern.endRadius - pattern.startRadius) * t;
@@ -415,13 +347,11 @@
                         break;
                         
                     case 's_curve':
-                        // S eğrisi çiz
                         x = startX + (t - 0.5) * pattern.length + noiseX;
                         y = startY + Math.sin(t * Math.PI * 2) * pattern.amplitude + noiseY;
                         break;
                         
                     case 'wave':
-                        // Dalga hareketi
                         const waveProgress = t * pattern.length;
                         x = startX + waveProgress * Math.cos(Math.PI / 6) + noiseX;
                         y = startY + waveProgress * Math.sin(Math.PI / 6) + 
