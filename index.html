@@ -169,15 +169,15 @@
             }, 100);
         }
 
-        // 🌊 HAREKET PATTERNLERİ
+        // 🌊 HAREKET PATTERNLERİ - BÜYÜK VE PARLAK
         const FLOW_PATTERNS = [
-            { type: 'circle', radius: 160, clockwise: true },
-            { type: 'circle', radius: 160, clockwise: false },
-            { type: 'circle', radius: 130, clockwise: true },
-            { type: 'spiral', startRadius: 50, endRadius: 150, clockwise: true },
-            { type: 'spiral', startRadius: 150, endRadius: 50, clockwise: false },
-            { type: 's_curve', amplitude: 90, length: 320 },
-            { type: 'wave', amplitude: 80, wavelength: 220, length: 360 }
+            { type: 'circle', radius: 280, clockwise: true },
+            { type: 'circle', radius: 280, clockwise: false },
+            { type: 'circle', radius: 250, clockwise: true },
+            { type: 'spiral', startRadius: 100, endRadius: 300, clockwise: true },
+            { type: 'spiral', startRadius: 300, endRadius: 100, clockwise: false },
+            { type: 's_curve', amplitude: 150, length: 500 },
+            { type: 'wave', amplitude: 140, wavelength: 300, length: 550 }
         ];
 
         // 🎹 PİYANO MESAJ SİSTEMİ - 3 AYRI FLUID (10 RENK)
@@ -202,36 +202,41 @@
                 const centerX = Math.random() * 0.5 * parentWidth + 0.25 * parentWidth;
                 const centerY = Math.random() * 0.5 * parentHeight + 0.25 * parentHeight;
                 
-                // 3 AYRI FLUID OLUŞTUR - ARALARINDA KISA BEKLEME
+                // 3 AYRI FLUID OLUŞTUR - HER BİRİ BÜYÜK VE GÜÇLÜ
                 
-                // FLUID 1: Renk 0-3 (4 renk) - BÜYÜK DAİRE
+                // FLUID 1: Renk 0-3 (4 renk) - DEV DAİRE
                 setTimeout(() => {
-                    const pattern1 = { type: 'circle', radius: 220, clockwise: Math.random() > 0.5 };
-                    const offset1X = (Math.random() - 0.5) * 100;
-                    const offset1Y = (Math.random() - 0.5) * 100;
+                    const pattern1 = { type: 'circle', radius: 300, clockwise: Math.random() > 0.5 };
+                    const offset1X = (Math.random() - 0.5) * 150;
+                    const offset1Y = (Math.random() - 0.5) * 150;
                     createFluidFlow(centerX + offset1X, centerY + offset1Y, keyColors.slice(0, 4), pattern1);
                 }, 0);
                 
-                // FLUID 2: Renk 4-7 (4 renk) - SPİRAL
+                // FLUID 2: Renk 4-7 (4 renk) - BÜYÜK SPİRAL
                 setTimeout(() => {
                     const pattern2 = { 
                         type: 'spiral', 
-                        startRadius: 80, 
-                        endRadius: 200, 
+                        startRadius: 120, 
+                        endRadius: 320, 
                         clockwise: Math.random() > 0.5 
                     };
-                    const offset2X = (Math.random() - 0.5) * 120;
-                    const offset2Y = (Math.random() - 0.5) * 120;
+                    const offset2X = (Math.random() - 0.5) * 180;
+                    const offset2Y = (Math.random() - 0.5) * 180;
                     createFluidFlow(centerX + offset2X, centerY + offset2Y, keyColors.slice(4, 8), pattern2);
-                }, 150);
+                }, 200);
                 
-                // FLUID 3: Renk 8-9 (2 renk) - KÜÇÜK DAİRE
+                // FLUID 3: Renk 8-9 (2 renk) - BÜYÜK WAVE
                 setTimeout(() => {
-                    const pattern3 = { type: 'circle', radius: 140, clockwise: Math.random() > 0.5 };
-                    const offset3X = (Math.random() - 0.5) * 80;
-                    const offset3Y = (Math.random() - 0.5) * 80;
+                    const pattern3 = { 
+                        type: 'wave', 
+                        amplitude: 140, 
+                        wavelength: 280, 
+                        length: 500 
+                    };
+                    const offset3X = (Math.random() - 0.5) * 160;
+                    const offset3Y = (Math.random() - 0.5) * 160;
                     createFluidFlow(centerX + offset3X, centerY + offset3Y, keyColors.slice(8, 10), pattern3);
-                }, 300);
+                }, 400);
             }
         });
 
@@ -270,8 +275,8 @@
             // Fluid başladı - cleanup'ı engelle
             isFluidActive = true;
             
-            // TOPLAM 240 FRAME - 4.8 SANİYE (DAHA UZUN, DAHA GÜÇLÜ)
-            const TOTAL_FRAMES = 240;
+            // TOPLAM 280 FRAME - 5.6 SANİYE (UZUN VE ETKİLEYİCİ)
+            const TOTAL_FRAMES = 280;
             const FRAME_DURATION = 20;
             
             let frameIndex = 0;
@@ -282,8 +287,8 @@
             // İlk rengi set et
             setPianoColor(colors[0]);
             
-            // Path'in %10'undan başla (daha erken başlangıç)
-            const startFrame = Math.floor(basePath.length * 0.1);
+            // Path'in %5'inden başla (hemen tam güçle başla)
+            const startFrame = Math.floor(basePath.length * 0.05);
             let currentX = basePath[startFrame].x;
             let currentY = basePath[startFrame].y;
             
