@@ -104,9 +104,9 @@
         const MIN_DISTANCE_BETWEEN_FLUIDS = 180;
         const POSITION_MEMORY_SIZE = 5;
 
-        // 🌊 AKILLI FLUID SESSION YÖNETİMİ
+        // 🌊 AKILLI SESSION YÖNETİMİ - YENİ!
         let currentFluidSession = null;
-        let keyPressCounter = 0;
+        let sessionKeyCounter = 0;
         const MAX_KEYS_PER_SESSION = 7;
 
         function forceFullScreenCanvas() {
@@ -242,41 +242,8 @@
             { type: 'wave', amplitude: 60, wavelength: 180, length: 280 }
         ];
 
-        // 🎯 AKILLI TUŞ YÖNETİMİ - Ana Kontrol
-        function handleKeyPress(colors) {
-            keyPressCounter++;
-            
-            // İlk tuş VEYA 7 tuştan sonra → YENİ SESSION
-            if (!currentFluidSession || keyPressCounter > MAX_KEYS_PER_SESSION) {
-                console.log(`🆕 YENİ SESSION (#${keyPressCounter})`);
-                
-                if (currentFluidSession) {
-                    currentFluidSession.shouldEnd = true;
-                }
-                
-                keyPressCounter = 1;
-                const pattern = FLOW_PATTERNS[Math.floor(Math.random() * FLOW_PATTERNS.length)];
-                const pos = getSmartRandomPosition();
-                
-                activeFluidCount++;
-                lastClearTime = Date.now();
-                
-                startNewFluidSession(pos.x, pos.y, colors, pattern);
-            }
-            // 2-7. tuşlar → MEVCUT SESSION'A YENİ YOL EKLE
-            else {
-                console.log(`➕ Yeni yol ekleniyor (#${keyPressCounter}/${MAX_KEYS_PER_SESSION})`);
-                
-                if (currentFluidSession && currentFluidSession.isActive) {
-                    const pattern = FLOW_PATTERNS[Math.floor(Math.random() * FLOW_PATTERNS.length)];
-                    currentFluidSession.addNewPath(colors, pattern);
-                }
-            }
-        }
-
-        // 👻 GHOST MODE & NORMAL TUŞLAR
         window.addEventListener('message', (event) => {
-            if (event.data.type === 'ghostKeyPress' || event.data.type === 'pianoKeyPress') {
+            if (event.data.type === 'ghostKeyPress') {
                 const key = event.data.key;
                 const keyColors = PIANO_COLORS[key];
                 
@@ -285,12 +252,56 @@
                     return;
                 }
                 
-                const prefix = event.data.type === 'ghostKeyPress' ? '👻 GHOST' : '🎹';
-                console.log(`${prefix} ${key.toUpperCase()} → ${keyColors.length} renk`);
+                console.log(`👻 GHOST ${key.toUpperCase()} → ${keyColors.length} renk`);
+                handleFluidRequest(keyColors);
+            }
+            
+            if (event.data.type === 'pianoKeyPress') {
+                const key = event.data.key;
+                const keyColors = PIANO_COLORS[key];
                 
-                handleKeyPress(keyColors);
+                if (!keyColors || keyColors.length === 0) {
+                    console.warn(`⚠️ ${key} için renk bulunamadı`);
+                    return;
+                }
+                
+                console.log(`🎹 ${key.toUpperCase()} → ${keyColors.length} renk`);
+                handleFluidRequest(keyColors);
             }
         });
+
+        // 🎯 ANA KONTROL FONKSİYONU - Akıllı Fluid Yönetimi
+        function handleFluidRequest(colors) {
+            sessionKeyCounter++;
+            
+            // İlk tuş VEYA 7 tuştan sonra → YENİ SESSION
+            if (!currentFluidSession || !currentFluidSession.isActive || sessionKeyCounter > MAX_KEYS_PER_SESSION) {
+                console.log(`🆕 YENİ SESSION BAŞLIYOR (Tuş #${sessionKeyCounter})`);
+                
+                // Eski session'ı bitir
+                if (currentFluidSession && currentFluidSession.isActive) {
+                    currentFluidSession.shouldEnd = true;
+                }
+                
+                sessionKeyCounter = 1;
+                const pattern = FLOW_PATTERNS[Math.floor(Math.random() * FLOW_PATTERNS.length)];
+                const pos = getSmartRandomPosition();
+                
+                activeFluidCount++;
+                lastClearTime = Date.now();
+                
+                createFluidFlow(pos.x, pos.y, colors, pattern);
+            }
+            // 2-7. tuşlar → MEVCUT SESSION'A YENİ YOL EKLE
+            else {
+                console.log(`➕ SESSION'A YENİ YOL EKLENİYOR (Tuş #${sessionKeyCounter}/${MAX_KEYS_PER_SESSION})`);
+                
+                if (currentFluidSession && currentFluidSession.addPath) {
+                    const pattern = FLOW_PATTERNS[Math.floor(Math.random() * FLOW_PATTERNS.length)];
+                    currentFluidSession.addPath(colors, pattern);
+                }
+            }
+        }
 
         function setPianoColor(color) {
             if (typeof CABLES === 'undefined' || !CABLES.patch) return;
@@ -313,38 +324,48 @@
             };
         }
 
-        // 🌊 YENİ FLUID SESSION - Tek Mouse, Çoklu Yol
-        function startNewFluidSession(startX, startY, colors, pattern) {
+        // 🌊 YENİLENMİŞ FLUID FLOW - Çoklu Yol Desteği
+        function createFluidFlow(startX, startY, colors, pattern) {
             const canvas = document.getElementById('glcanvas');
             if (!canvas) return;
             
             const width = parentWidth || window.innerWidth;
             const height = parentHeight || window.innerHeight;
             
+            const TOTAL_FRAMES = 120;
+            const FRAME_DURATION = 15;
+            
+            const basePath = generateBasePath(startX, startY, pattern, width, height, TOTAL_FRAMES);
+            const startFrame = Math.floor(basePath.length * 0.15);
+            
+            let currentX = basePath[startFrame].x;
+            let currentY = basePath[startFrame].y;
+            let frameIndex = 0;
+            let animationInterval = null;
+            
+            // Session objesi - Çoklu yol yönetimi
             const session = {
                 isActive: true,
                 shouldEnd: false,
-                canvas: canvas,
-                width: width,
-                height: height,
-                currentX: startX,
-                currentY: startY,
-                paths: [],
+                currentX: currentX,
+                currentY: currentY,
                 frameIndex: 0,
-                animationInterval: null,
+                paths: [{
+                    colors: colors,
+                    path: basePath,
+                    startFrame: startFrame
+                }],
                 
-                addNewPath: function(newColors, newPattern) {
-                    console.log(`🎨 O anki pozisyondan yeni yol: ${newColors.length} renk`);
-                    
+                addPath: function(newColors, newPattern) {
+                    console.log(`🎨 Yeni yol ekleniyor: ${newColors.length} renk`);
                     const newPath = generateBasePath(
-                        this.currentX, 
-                        this.currentY, 
-                        newPattern, 
-                        this.width, 
-                        this.height, 
+                        this.currentX,
+                        this.currentY,
+                        newPattern,
+                        width,
+                        height,
                         120
                     );
-                    
                     this.paths.push({
                         colors: newColors,
                         path: newPath,
@@ -355,118 +376,114 @@
             
             currentFluidSession = session;
             
-            // İlk yol
-            const initialPath = generateBasePath(startX, startY, pattern, width, height, 120);
-            const startFrame = Math.floor(initialPath.length * 0.15);
-            session.currentX = initialPath[startFrame].x;
-            session.currentY = initialPath[startFrame].y;
+            console.log(`🎨 Fluid başlıyor: ${colors.length} renk (${activeFluidCount} aktif)`);
             
-            session.paths.push({
-                colors: colors,
-                path: initialPath,
-                startFrame: startFrame
-            });
-            
-            console.log(`🎨 Session başladı: ${colors.length} renk`);
-            
+            setPianoColor(colors[0]);
+            setPianoColor(colors[0]);
             setPianoColor(colors[0]);
             setPianoColor(colors[0]);
             
             setTimeout(() => {
-                canvas.dispatchEvent(new MouseEvent('mousedown', {
-                    clientX: session.currentX,
-                    clientY: session.currentY,
-                    button: 0,
-                    buttons: 1,
-                    bubbles: true
-                }));
+                setPianoColor(colors[0]);
+                setPianoColor(colors[0]);
                 
                 setTimeout(() => {
-                    session.animationInterval = setInterval(() => {
-                        if (session.shouldEnd && session.paths.length === 0) {
-                            clearInterval(session.animationInterval);
+                    canvas.dispatchEvent(new MouseEvent('mousedown', {
+                        clientX: currentX,
+                        clientY: currentY,
+                        button: 0,
+                        buttons: 1,
+                        bubbles: true
+                    }));
+                    
+                    setTimeout(() => {
+                        animationInterval = setInterval(() => {
+                            session.frameIndex++;
+                            frameIndex++;
                             
-                            canvas.dispatchEvent(new MouseEvent('mouseup', {
+                            // Aktif yolu bul
+                            let activePathData = null;
+                            for (let i = session.paths.length - 1; i >= 0; i--) {
+                                const pathData = session.paths[i];
+                                const pathAge = session.frameIndex - pathData.startFrame;
+                                
+                                if (pathAge >= 0 && pathAge < pathData.path.length) {
+                                    activePathData = {
+                                        colors: pathData.colors,
+                                        path: pathData.path,
+                                        localFrame: pathAge,
+                                        index: i
+                                    };
+                                    break;
+                                }
+                            }
+                            
+                            // Yol tamamlandıysa listeden çıkar
+                            if (activePathData && activePathData.localFrame >= activePathData.path.length - 1) {
+                                session.paths.splice(activePathData.index, 1);
+                            }
+                            
+                            // Hiç aktif yol yoksa ve bitme sinyali varsa → mouseup
+                            if (!activePathData) {
+                                if (session.shouldEnd || session.paths.length === 0) {
+                                    clearInterval(animationInterval);
+                                    
+                                    canvas.dispatchEvent(new MouseEvent('mouseup', {
+                                        clientX: session.currentX,
+                                        clientY: session.currentY,
+                                        button: 0,
+                                        buttons: 0,
+                                        bubbles: true
+                                    }));
+                                    
+                                    console.log('✅ Fluid tamamlandı');
+                                    
+                                    session.isActive = false;
+                                    if (currentFluidSession === session) {
+                                        currentFluidSession = null;
+                                    }
+                                    
+                                    activeFluidCount--;
+                                    lastClearTime = Date.now();
+                                }
+                                return;
+                            }
+                            
+                            // Renk hesapla
+                            const progress = activePathData.localFrame / activePathData.path.length;
+                            const pathColors = activePathData.colors;
+                            const colorProgress = progress * (pathColors.length - 1);
+                            const colorIndex = Math.floor(colorProgress);
+                            const colorBlend = colorProgress - colorIndex;
+                            
+                            if (colorIndex < pathColors.length - 1) {
+                                const blendedColor = blendColors(
+                                    pathColors[colorIndex], 
+                                    pathColors[colorIndex + 1], 
+                                    colorBlend
+                                );
+                                setPianoColor(blendedColor);
+                            } else {
+                                setPianoColor(pathColors[pathColors.length - 1]);
+                            }
+                            
+                            // Pozisyon güncelle
+                            const pathPoint = activePathData.path[activePathData.localFrame];
+                            session.currentX = Math.max(20, Math.min(width - 20, pathPoint.x));
+                            session.currentY = Math.max(20, Math.min(height - 20, pathPoint.y));
+                            
+                            canvas.dispatchEvent(new MouseEvent('mousemove', {
                                 clientX: session.currentX,
                                 clientY: session.currentY,
                                 button: 0,
-                                buttons: 0,
+                                buttons: 1,
                                 bubbles: true
                             }));
                             
-                            console.log('✅ Session tamamlandı');
-                            
-                            session.isActive = false;
-                            if (currentFluidSession === session) {
-                                currentFluidSession = null;
-                            }
-                            
-                            activeFluidCount--;
-                            lastClearTime = Date.now();
-                            
-                            return;
-                        }
-                        
-                        session.frameIndex++;
-                        
-                        let currentPathData = null;
-                        for (let i = session.paths.length - 1; i >= 0; i--) {
-                            const pathData = session.paths[i];
-                            const pathAge = session.frameIndex - pathData.startFrame;
-                            
-                            if (pathAge >= 0 && pathAge < pathData.path.length) {
-                                currentPathData = {
-                                    ...pathData,
-                                    localFrame: pathAge,
-                                    pathIndex: i
-                                };
-                                break;
-                            }
-                        }
-                        
-                        if (currentPathData && currentPathData.localFrame >= currentPathData.path.length - 1) {
-                            session.paths.splice(currentPathData.pathIndex, 1);
-                        }
-                        
-                        if (!currentPathData) {
-                            if (session.shouldEnd) {
-                                session.paths = [];
-                            }
-                            return;
-                        }
-                        
-                        const progress = currentPathData.localFrame / currentPathData.path.length;
-                        const colors = currentPathData.colors;
-                        const colorProgress = progress * (colors.length - 1);
-                        const colorIndex = Math.floor(colorProgress);
-                        const colorBlend = colorProgress - colorIndex;
-                        
-                        if (colorIndex < colors.length - 1) {
-                            const blendedColor = blendColors(
-                                colors[colorIndex], 
-                                colors[colorIndex + 1], 
-                                colorBlend
-                            );
-                            setPianoColor(blendedColor);
-                        } else {
-                            setPianoColor(colors[colors.length - 1]);
-                        }
-                        
-                        const pathPoint = currentPathData.path[currentPathData.localFrame];
-                        session.currentX = Math.max(20, Math.min(session.width - 20, pathPoint.x));
-                        session.currentY = Math.max(20, Math.min(session.height - 20, pathPoint.y));
-                        
-                        canvas.dispatchEvent(new MouseEvent('mousemove', {
-                            clientX: session.currentX,
-                            clientY: session.currentY,
-                            button: 0,
-                            buttons: 1,
-                            bubbles: true
-                        }));
-                        
-                    }, 15);
-                }, 50);
-            }, 500);
+                        }, FRAME_DURATION);
+                    }, 50);
+                }, 100);
+            }, 400);
         }
 
         function generateBasePath(startX, startY, pattern, width, height, pointCount) {
@@ -551,3 +568,28 @@
         document.getElementById('glcanvas').addEventListener('touchmove', (e)=>{ e.preventDefault(); }, false);
         
         setInterval(hideStatsPanels, 1000);
+        setInterval(forceFullScreenCanvas, 2000);
+        
+        window.addEventListener('resize', () => {
+            try {
+                if (window.parent !== window) {
+                    parentWidth = window.parent.innerWidth;
+                    parentHeight = window.parent.innerHeight;
+                }
+            } catch(e) {
+                parentWidth = window.innerWidth;
+                parentHeight = window.innerHeight;
+            }
+            forceFullScreenCanvas();
+        });
+
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'parentResize') {
+                parentWidth = event.data.width;
+                parentHeight = event.data.height;
+                forceFullScreenCanvas();
+            }
+        });
+    </script>
+</body>
+</html>
