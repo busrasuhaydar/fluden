@@ -357,7 +357,7 @@
                 }],
                 
                 addPath: function(newColors, newPattern) {
-                    console.log(`🎨 Yeni yol ekleniyor: ${newColors.length} renk`);
+                    console.log(`🎨 Yeni yol ekleniyor: ${newColors.length} renk (frame: ${this.frameIndex})`);
                     const newPath = generateBasePath(
                         this.currentX,
                         this.currentY,
@@ -366,10 +366,11 @@
                         height,
                         120
                     );
+                    // YENİ YOL HEMEN BAŞLASIN - mevcut frame'den başlat
                     this.paths.push({
                         colors: newColors,
                         path: newPath,
-                        startFrame: this.frameIndex
+                        startFrame: this.frameIndex + 1  // Bir sonraki frame'de başla
                     });
                 }
             };
@@ -414,12 +415,14 @@
                                         localFrame: pathAge,
                                         index: i
                                     };
+                                    console.log(`▶️ Aktif yol #${i} (frame: ${pathAge}/${pathData.path.length})`);
                                     break;
                                 }
                             }
                             
                             // Yol tamamlandıysa listeden çıkar
                             if (activePathData && activePathData.localFrame >= activePathData.path.length - 1) {
+                                console.log(`🏁 Yol tamamlandı, listeden çıkarılıyor (kalan: ${session.paths.length - 1})`);
                                 session.paths.splice(activePathData.index, 1);
                             }
                             
