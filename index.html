@@ -134,10 +134,9 @@
                 if (gl) {
                     gl.clearColor(0.0, 0.0, 0.0, 1.0);
                     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                    console.log('🧹 Canvas WebGL ile temizlendi');
                 }
             } catch(e) {
-                console.log('⚠️ WebGL temizleme hatası:', e);
+                // Silent fail
             }
         }
 
@@ -181,7 +180,6 @@
                     if (recentFluidPositions.length > POSITION_MEMORY_SIZE) {
                         recentFluidPositions.shift();
                     }
-                    console.log(`📍 Yeni pozisyon: (${Math.round(x)}, ${Math.round(y)})`);
                     return { x, y };
                 }
                 
@@ -200,8 +198,6 @@
         }
 
         function patchInitialized(patch) {
-            console.log('✅ Fluid hazır!');
-            
             startAutoClear();
             
             hideStatsPanels();
@@ -214,7 +210,6 @@
         }
 
         function patchFinishedLoading(patch) {
-            console.log('🎨 Yükleme tamamlandı!');
             hideStatsPanels();
             forceFullScreenCanvas();
         }
@@ -248,11 +243,9 @@
                 const keyColors = PIANO_COLORS[key];
                 
                 if (!keyColors || keyColors.length === 0) {
-                    console.warn(`⚠️ ${key} için renk bulunamadı`);
                     return;
                 }
-                
-                console.log(`👻 GHOST ${key.toUpperCase()} → ${keyColors.length} renk`);
+
                 handleFluidRequest(keyColors);
             }
             
@@ -261,11 +254,9 @@
                 const keyColors = PIANO_COLORS[key];
                 
                 if (!keyColors || keyColors.length === 0) {
-                    console.warn(`⚠️ ${key} için renk bulunamadı`);
                     return;
                 }
-                
-                console.log(`🎹 ${key.toUpperCase()} → ${keyColors.length} renk`);
+
                 handleFluidRequest(keyColors);
             }
         });
@@ -276,8 +267,6 @@
             
             // İlk tuş VEYA 7 tuştan sonra → YENİ SESSION
             if (!currentFluidSession || !currentFluidSession.isActive || sessionKeyCounter > MAX_KEYS_PER_SESSION) {
-                console.log(`🆕 YENİ SESSION BAŞLIYOR (Tuş #${sessionKeyCounter})`);
-                
                 // Eski session'ı bitir
                 if (currentFluidSession && currentFluidSession.isActive) {
                     currentFluidSession.shouldEnd = true;
@@ -294,8 +283,6 @@
             }
             // 2-7. tuşlar → MEVCUT SESSION'A YENİ YOL EKLE
             else {
-                console.log(`➕ SESSION'A YENİ YOL EKLENİYOR (Tuş #${sessionKeyCounter}/${MAX_KEYS_PER_SESSION})`);
-                
                 if (currentFluidSession && currentFluidSession.addPath) {
                     const pattern = FLOW_PATTERNS[Math.floor(Math.random() * FLOW_PATTERNS.length)];
                     currentFluidSession.addPath(colors, pattern);
@@ -357,7 +344,6 @@
                 }],
                 
                 addPath: function(newColors, newPattern) {
-                    console.log(`🎨 Yeni yol ekleniyor: ${newColors.length} renk (frame: ${this.frameIndex})`);
                     const newPath = generateBasePath(
                         this.currentX,
                         this.currentY,
@@ -376,9 +362,7 @@
             };
             
             currentFluidSession = session;
-            
-            console.log(`🎨 Fluid başlıyor: ${colors.length} renk (${activeFluidCount} aktif)`);
-            
+
             setPianoColor(colors[0]);
             setPianoColor(colors[0]);
             setPianoColor(colors[0]);
@@ -415,14 +399,12 @@
                                         localFrame: pathAge,
                                         index: i
                                     };
-                                    console.log(`▶️ Aktif yol #${i} (frame: ${pathAge}/${pathData.path.length})`);
                                     break;
                                 }
                             }
                             
                             // Yol tamamlandıysa listeden çıkar
                             if (activePathData && activePathData.localFrame >= activePathData.path.length - 1) {
-                                console.log(`🏁 Yol tamamlandı, listeden çıkarılıyor (kalan: ${session.paths.length - 1})`);
                                 session.paths.splice(activePathData.index, 1);
                             }
                             
@@ -438,9 +420,7 @@
                                         buttons: 0,
                                         bubbles: true
                                     }));
-                                    
-                                    console.log('✅ Fluid tamamlandı');
-                                    
+
                                     session.isActive = false;
                                     if (currentFluidSession === session) {
                                         currentFluidSession = null;
