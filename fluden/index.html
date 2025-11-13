@@ -61,13 +61,12 @@
         let cablesLoaded = false;
 
         function showError(initiator,...args) {
-            console.error('⚠️ Cables Error:', ...args);
+            // Error logging disabled
         }
 
         function patchInitialized(patch) {
             patchReady = true;
-            console.log('✅ Cables patch hazır!');
-            
+
             forceFullscreen();
             hideAllText();
             setInterval(hideAllText, 100);
@@ -80,7 +79,6 @@
 
         function testColorVariables() {
             if (!patchReady || typeof CABLES === 'undefined' || !CABLES.patch) {
-                console.warn('❌ CABLES patch henüz hazır değil');
                 return;
             }
 
@@ -88,9 +86,8 @@
             testVars.forEach(varName => {
                 try {
                     const val = CABLES.patch.getVariable(varName);
-                    console.log(`✅ ${varName} mevcut:`, val);
                 } catch(e) {
-                    console.warn(`⚠️ ${varName} bulunamadı`);
+                    // Variable not found
                 }
             });
         }
@@ -144,7 +141,6 @@
 
         function patchFinishedLoading(patch) {
             cablesLoaded = true;
-            console.log('🎨 Fluid yüklendi ve hazır!');
         }
 
         // 🎹 PIANO MESSAGE SYSTEM - FIXED!
@@ -157,15 +153,12 @@
                 const key = event.data.key;
                 
                 if (colors.length === 0) {
-                    console.warn('⚠️ Renk bulunamadı!');
                     return;
                 }
-                
+
                 // Random pozisyon
                 const x = event.data.x || Math.random() * window.innerWidth;
                 const y = event.data.y || Math.random() * window.innerHeight;
-                
-                console.log('🎹 Mesaj alındı:', key.toUpperCase(), '->', colors.length, 'renk');
                 
                 // ANA RENK: Merkez
                 applyPianoColor(colors[0]);
@@ -187,10 +180,9 @@
             }
         }, false);
 
-        // Rengi Cables'e gönder - IMPROVED
+        // Apply color to patch
         function applyPianoColor(color) {
             if (!patchReady || typeof CABLES === 'undefined' || !CABLES.patch) {
-                console.warn('⚠️ Cables hazır değil, renk uygulanamıyor');
                 return;
             }
 
@@ -230,10 +222,9 @@
             
             try {
                 CABLES.patch.setVariable('SplatColor', normalizedColor);
-                console.log('✅ SplatColor:', Math.round(r), Math.round(g), Math.round(b));
                 success = true;
             } catch(e) {
-                console.warn('⚠️ SplatColor set edilemedi:', e.message);
+                // Silent fail
             }
 
             try {
@@ -255,16 +246,12 @@
                 success = true;
             } catch(e) {}
 
-            if (!success) {
-                console.error('❌ Hiçbir renk variable\'ı çalışmadı!');
-            }
         }
 
         // Mouse simülasyonu - SPIRAL
         function simulatePianoInput(startX, startY) {
             const canvas = document.getElementById('glcanvas');
             if (!canvas) {
-                console.warn('⚠️ Canvas bulunamadı!');
                 return;
             }
 
@@ -277,8 +264,6 @@
                 bubbles: true,
                 cancelable: true
             }));
-
-            console.log('🖱️ Mouse down:', Math.round(startX), Math.round(startY));
 
             // Spiral hareket
             let angle = 0;
@@ -314,14 +299,11 @@
                         bubbles: true,
                         cancelable: true
                     }));
-
-                    console.log('✅ Spiral tamamlandı');
                 }
             }, 16);
         }
 
         document.addEventListener("CABLES.jsLoaded", function (event) {
-            console.log('📦 CABLES.js yüklendi');
             CABLES.patch = new CABLES.Patch({
                 patch: CABLES.exportedPatch,
                 "prefixAssetPath": "",
@@ -340,7 +322,6 @@
 
         // TEST: Manuel renk gönder
         window.testFluid = function() {
-            console.log('🧪 Manuel test başlatılıyor...');
             applyPianoColor({ r: 255, g: 100, b: 150 });
             simulatePianoInput(window.innerWidth / 2, window.innerHeight / 2);
         };
@@ -348,7 +329,6 @@
         // 5 saniye sonra otomatik test
         setTimeout(() => {
             if (cablesLoaded) {
-                console.log('🧪 Otomatik test başlatılıyor...');
                 window.testFluid();
             }
         }, 5000);
