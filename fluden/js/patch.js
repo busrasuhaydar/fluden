@@ -13287,7 +13287,6 @@ class Patch extends eventtarget/* default */.A
             this.timer.play();
         }
 
-        console.log("made with https://cables.gl"); // eslint-disable-line
         this.cg = undefined;
 
     }
